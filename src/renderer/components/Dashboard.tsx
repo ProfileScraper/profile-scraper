@@ -12,7 +12,7 @@ export function Dashboard() {
     stopScrape,
   } = useScraper();
 
-  const [profileName, setProfileName] = React.useState('b&h-photo');
+  const [profileName, setProfileName] = React.useState('example-site');
 
   const handleStart = () => {
     startScrape(profileName);
