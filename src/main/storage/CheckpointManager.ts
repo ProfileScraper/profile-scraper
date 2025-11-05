@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import { CheckpointData } from '../../shared/types';
 
 export class CheckpointManager {
@@ -26,7 +27,7 @@ export class CheckpointManager {
   }
 
   save(data: CheckpointData): void {
-    const dir = require('path').dirname(this.checkpointPath);
+    const dir = path.dirname(this.checkpointPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }

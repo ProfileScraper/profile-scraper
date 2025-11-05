@@ -58,4 +58,30 @@ describe('CheckpointManager', () => {
     expect(manager.isCompleted('url1')).toBe(true);
     expect(manager.isCompleted('url2')).toBe(false);
   });
+
+  test('should reset checkpoint', () => {
+    manager.addCompleted('url1', 'test-profile');
+    manager.reset();
+
+    expect(manager.load()).toBeNull();
+    expect(fs.existsSync(CHECKPOINT_PATH)).toBe(false);
+  });
+
+  test('should return all completed URLs', () => {
+    manager.addCompleted('url1', 'test-profile');
+    manager.addCompleted('url2', 'test-profile');
+
+    const completed = manager.getCompleted();
+    expect(completed).toEqual(['url1', 'url2']);
+    expect(completed).toHaveLength(2);
+  });
+
+  test('should not add duplicate URLs', () => {
+    manager.addCompleted('url1', 'test-profile');
+    manager.addCompleted('url1', 'test-profile'); // Duplicate
+
+    const checkpoint = manager.load();
+    expect(checkpoint?.completed).toEqual(['url1']); // Only one
+    expect(checkpoint?.successCount).toBe(1); // Count not incremented
+  });
 });
