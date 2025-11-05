@@ -6,14 +6,18 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:main\"",
     "dev:renderer": "vite",
-    "dev:main": "wait-on http://localhost:5173 && tsc -p tsconfig.main.json && electron .",
+    "dev:main": "wait-on http://localhost:5173 && tsc -p tsconfig.main.json && cross-env NODE_ENV=development electron .",
     "build": "npm run build:renderer && npm run build:main",
     "build:renderer": "vite build",
     "build:main": "tsc -p tsconfig.main.json",
     "test": "jest",
     "package": "npm run build && electron-builder"
   },
-  "keywords": ["scraper", "electron", "patchright"],
+  "keywords": [
+    "scraper",
+    "electron",
+    "patchright"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
@@ -33,6 +37,7 @@
     "@vitejs/plugin-react": "^5.1.0",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
     "electron-builder": "^26.0.12",
     "jest": "^30.2.0",
     "postcss": "^8.5.6",
