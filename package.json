@@ -2,7 +2,7 @@
   "name": "configurable-scraper",
   "version": "1.0.0",
   "description": "Configurable web scraper with Electron and patchright",
-  "main": "dist/main/main.js",
+  "main": "dist/main/main/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:main\"",
     "dev:renderer": "vite",
