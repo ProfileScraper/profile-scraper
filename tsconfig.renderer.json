@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "lib": ["ESNext", "DOM"],
+    "jsx": "react-jsx",
+    "moduleResolution": "node",
+    "outDir": "dist/renderer"
+  },
+  "include": ["src/renderer/**/*", "src/shared/**/*"]
+}
