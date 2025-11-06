@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import * as path from 'path';
 import * as fs from 'fs';
+import { app } from 'electron';
 import { SCHEMA } from './schema';
 
 let db: DatabaseSync | null = null;
@@ -48,8 +49,15 @@ function runMigrations(db: DatabaseSync): void {
 export function initDatabase(dataPath?: string): DatabaseSync {
   if (db) return db;
 
-  const dbPath = dataPath || path.join(process.cwd(), 'data', 'scraper.db');
+  // Use app.getPath('userData') for production, process.cwd() for development
+  const defaultPath = app.isPackaged
+    ? path.join(app.getPath('userData'), 'data', 'scraper.db')
+    : path.join(process.cwd(), 'data', 'scraper.db');
+
+  const dbPath = dataPath || defaultPath;
   const dbDir = path.dirname(dbPath);
+
+  console.log('[Database] Initializing database at:', dbPath);
 
   // Ensure directory exists
   if (!fs.existsSync(dbDir)) {

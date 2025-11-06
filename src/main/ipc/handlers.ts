@@ -1,4 +1,4 @@
-import { ipcMain, IpcMainInvokeEvent } from 'electron';
+import { ipcMain, IpcMainInvokeEvent, app } from 'electron';
 import { IPC_CHANNELS } from '../../shared/ipc-channels';
 import { ScrapeOrchestrator } from '../scraper/ScrapeOrchestrator';
 import { ScraperConfig, SiteProfile } from '../../shared/types';
@@ -9,13 +9,20 @@ import { JobRepository } from '../database/JobRepository';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Helper to get base directory for data storage
+function getDataDir(): string {
+  return app.isPackaged
+    ? app.getPath('userData')
+    : process.cwd();
+}
+
 let orchestrator: ScrapeOrchestrator | null = null;
 let currentJobId: string | null = null;
 
 export function setupIpcHandlers(mainWindow: Electron.BrowserWindow): void {
   // Load config
   ipcMain.handle(IPC_CHANNELS.CONFIG_LOAD, async () => {
-    const configPath = path.join(process.cwd(), 'configs', 'scraper-config.json');
+    const configPath = path.join(getDataDir(), 'configs', 'scraper-config.json');
 
     if (!fs.existsSync(configPath)) {
       return null;
@@ -90,7 +97,7 @@ export function setupIpcHandlers(mainWindow: Electron.BrowserWindow): void {
       console.log('[Main Process] Job created:', currentJobId);
 
       // Setup job-specific output directory and checkpoint
-      const outputDir = path.join(process.cwd(), 'output', profileId, currentJobId);
+      const outputDir = path.join(getDataDir(), 'output', profileId, currentJobId);
       const checkpointPath = path.join(outputDir, 'progress.json');
 
       // Ensure output directory exists

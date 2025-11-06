@@ -13,11 +13,18 @@ import { migrateFromJSON } from './database/migration';
 let mainWindow: BrowserWindow | null = null;
 
 async function createWindow(): Promise<void> {
-  // Initialize database before creating window
-  initDatabase();
+  try {
+    console.log('[Main] Starting createWindow...');
 
-  // Run automatic migration from JSON to SQLite
-  await migrateFromJSON();
+    // Initialize database before creating window
+    console.log('[Main] Initializing database...');
+    initDatabase();
+    console.log('[Main] Database initialized');
+
+    // Run automatic migration from JSON to SQLite
+    console.log('[Main] Running migration...');
+    await migrateFromJSON();
+    console.log('[Main] Migration complete');
 
   const preloadPath = path.join(__dirname, 'preload.js');
   console.log('[Main] Creating window with preload path:', preloadPath);
@@ -56,9 +63,15 @@ async function createWindow(): Promise<void> {
   setupDataHandlers();
   setupLogHandlers();
 
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
+    mainWindow.on('closed', () => {
+      mainWindow = null;
+    });
+
+    console.log('[Main] Window created successfully');
+  } catch (error) {
+    console.error('[Main] Error creating window:', error);
+    throw error;
+  }
 }
 
 app.on('ready', createWindow);

@@ -1,4 +1,4 @@
-import { ipcMain, IpcMainInvokeEvent, dialog } from 'electron';
+import { ipcMain, IpcMainInvokeEvent, dialog, app } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { IPC_CHANNELS } from '../../shared/ipc-channels';
@@ -7,6 +7,13 @@ import { ProductRepository } from '../database/ProductRepository';
 import { DataExporter } from '../storage/DataExporter';
 import { getDatabase } from '../database/db';
 import { ProductData } from '../../shared/types';
+
+// Helper to get base directory for data storage
+function getDataDir(): string {
+  return app.isPackaged
+    ? app.getPath('userData')
+    : process.cwd();
+}
 
 /**
  * Validates if a string is a valid UUID v4 format
@@ -165,7 +172,7 @@ export function setupJobHandlers(): void {
       }
 
       // Create temporary directory for export files
-      const tempDir = path.join(job.outputDir || path.join(process.cwd(), 'temp'), 'export');
+      const tempDir = path.join(job.outputDir || path.join(getDataDir(), 'temp'), 'export');
       if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
       }

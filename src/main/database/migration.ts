@@ -1,8 +1,16 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { app } from 'electron';
 import { ProfileRepository } from './ProfileRepository';
 import { getDatabase } from './db';
 import { ScraperConfig, SiteProfile } from '../../shared/types';
+
+// Helper to get base directory for data storage
+function getDataDir(): string {
+  return app.isPackaged
+    ? app.getPath('userData')
+    : process.cwd();
+}
 
 interface MigrationResult {
   success: boolean;
@@ -23,8 +31,8 @@ export async function migrateFromJSON(): Promise<MigrationResult> {
     errors: []
   };
 
-  const configPath = path.join(process.cwd(), 'configs', 'scraper-config.json');
-  const backupPath = path.join(process.cwd(), 'configs', 'scraper-config.json.backup');
+  const configPath = path.join(getDataDir(), 'configs', 'scraper-config.json');
+  const backupPath = path.join(getDataDir(), 'configs', 'scraper-config.json.backup');
 
   // Check if JSON config file exists
   if (!fs.existsSync(configPath)) {
