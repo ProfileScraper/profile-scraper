@@ -1,7 +1,7 @@
 {
-  "name": "configurable-scraper",
+  "name": "profile-scraper",
   "version": "1.0.0",
-  "description": "Configurable web scraper with Electron and patchright",
+  "description": "Profile-based web scraper with Electron and patchright",
   "main": "dist/main/main/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:main\"",

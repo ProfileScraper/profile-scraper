@@ -1,5 +1,5 @@
-appId: com.configurablescraper.app
-productName: Configurable Scraper
+appId: com.profilescraper.app
+productName: ProfileScraper
 directories:
   output: release
 files:
