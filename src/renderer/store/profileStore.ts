@@ -26,6 +26,7 @@ interface ProfileFormState {
   retries: number;
   checkpointInterval: number;
   headless: boolean;
+  overwriteExisting: boolean;
 
   // UI state
   currentStep: number;
@@ -51,8 +52,9 @@ interface ProfileStoreActions {
   updateProductPageAction: (index: number, action: Action) => void;
   reorderProductPageActions: (startIndex: number, endIndex: number) => void;
   setPagination: (type: 'button' | 'infinite' | 'url', selector: string, maxPages: number) => void;
-  setOrchestratorSettings: (settings: { concurrency?: number; delayRange?: [number, number]; retries?: number; checkpointInterval?: number; headless?: boolean }) => void;
+  setOrchestratorSettings: (settings: { concurrency?: number; delayRange?: [number, number]; retries?: number; checkpointInterval?: number; headless?: boolean; overwriteExisting?: boolean }) => void;
   setHeadless: (headless: boolean) => void;
+  setOverwriteExisting: (overwrite: boolean) => void;
 
   // Navigation
   setCurrentStep: (step: number) => void;
@@ -86,6 +88,7 @@ const initialState: ProfileFormState = {
   retries: 3,
   checkpointInterval: 10,
   headless: true, // Default to headless mode
+  overwriteExisting: false, // Default to false - only scrape new products
   currentStep: 0,
   isInspectorActive: false,
   isSaving: false,
@@ -107,6 +110,21 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   removeFieldSelector: (field) => set((state) => {
     const { [field]: removed, ...rest } = state.fieldSelectors;
     return { fieldSelectors: rest };
+  }),
+
+  updateFieldSelector: (oldField, newField, selector) => set((state) => {
+    // If field name hasn't changed, just update the selector
+    if (oldField === newField) {
+      return {
+        fieldSelectors: { ...state.fieldSelectors, [newField]: selector }
+      };
+    }
+
+    // If field name changed, remove old and add new
+    const { [oldField]: removed, ...rest } = state.fieldSelectors;
+    return {
+      fieldSelectors: { ...rest, [newField]: selector }
+    };
   }),
 
   addPreAction: (action) => set((state) => ({
@@ -159,9 +177,11 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     retries: settings.retries ?? state.retries,
     checkpointInterval: settings.checkpointInterval ?? state.checkpointInterval,
     headless: settings.headless ?? state.headless,
+    overwriteExisting: settings.overwriteExisting ?? state.overwriteExisting,
   })),
 
   setHeadless: (headless) => set({ headless }),
+  setOverwriteExisting: (overwriteExisting) => set({ overwriteExisting }),
 
   setCurrentStep: (step) => set({ currentStep: step }),
   nextStep: () => set((state) => ({ currentStep: state.currentStep + 1 })),
@@ -189,6 +209,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         retries: profile.retries,
         checkpointInterval: profile.checkpointInterval,
         headless: profile.headless !== false, // Default to true
+        overwriteExisting: profile.overwriteExisting || false, // Default to false
       });
     }
   },
@@ -216,7 +237,13 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         retries: state.retries,
         checkpointInterval: state.checkpointInterval,
         headless: state.headless,
+        overwriteExisting: state.overwriteExisting,
       };
+
+      console.log('[ProfileStore] Saving profile with settings:', {
+        headless: profile.headless,
+        overwriteExisting: profile.overwriteExisting,
+      });
 
       if (state.editingProfileId) {
         await window.electronAPI.updateProfile(state.editingProfileId, profile);

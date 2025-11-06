@@ -33,6 +33,7 @@ export function setupProfileHandlers(): void {
         throw new Error(`Invalid profile ID format: ${id}`);
       }
       console.log('[IPC] Updating profile:', id);
+      console.log('[IPC] Profile settings: headless=', profile.headless, 'overwriteExisting=', profile.overwriteExisting);
       profileRepo.update(id, profile);
       return { success: true };
     } catch (error) {

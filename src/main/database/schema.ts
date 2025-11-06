@@ -17,7 +17,8 @@ export const SCHEMA = {
       delay_max INTEGER DEFAULT 4000,
       retries INTEGER DEFAULT 3,
       checkpoint_interval INTEGER DEFAULT 10,
-      headless INTEGER DEFAULT 1
+      headless INTEGER DEFAULT 1,
+      overwrite_existing INTEGER DEFAULT 0
     )
   `,
   JOBS: `
@@ -27,6 +28,7 @@ export const SCHEMA = {
       started_at INTEGER NOT NULL,
       completed_at INTEGER,
       status TEXT NOT NULL,
+      phase TEXT,
       total_products INTEGER,
       products_scraped INTEGER,
       success_count INTEGER,
@@ -46,5 +48,43 @@ export const SCHEMA = {
       timestamp INTEGER NOT NULL,
       FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
     )
+  `,
+  PRODUCTS: `
+    CREATE TABLE IF NOT EXISTS products (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      job_id TEXT NOT NULL,
+      url TEXT NOT NULL,
+      scraped_at INTEGER NOT NULL,
+      FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE,
+      UNIQUE(job_id, url)
+    )
+  `,
+  SCRAPE_DATA: `
+    CREATE TABLE IF NOT EXISTS scrape_data (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      field_name TEXT NOT NULL,
+      field_value TEXT,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    )
+  `,
+  PRODUCT_LOGS: `
+    CREATE TABLE IF NOT EXISTS product_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      timestamp INTEGER NOT NULL,
+      log_level TEXT NOT NULL,
+      message TEXT NOT NULL,
+      context TEXT,
+      field_name TEXT,
+      selector TEXT,
+      element_count INTEGER,
+      error_message TEXT,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    )
+  `,
+  PRODUCT_LOGS_INDEX: `
+    CREATE INDEX IF NOT EXISTS idx_product_logs_product_id
+    ON product_logs(product_id)
   `
 };

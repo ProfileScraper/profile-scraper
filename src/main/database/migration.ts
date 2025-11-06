@@ -123,13 +123,17 @@ export async function migrateFromJSON(): Promise<MigrationResult> {
     }
   }
 
-  // Backup JSON file if migration was successful
+  // Backup and remove JSON file if migration was successful
   if (result.profilesMigrated > 0) {
     try {
       fs.copyFileSync(configPath, backupPath);
       console.log('[Migration] Backed up original config to:', backupPath);
+
+      // Remove the original config file so migration doesn't run again
+      fs.unlinkSync(configPath);
+      console.log('[Migration] Removed original config file to prevent duplicate migrations');
     } catch (error) {
-      const errorMsg = `Failed to backup JSON config: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      const errorMsg = `Failed to backup/remove JSON config: ${error instanceof Error ? error.message : 'Unknown error'}`;
       console.warn('[Migration]', errorMsg);
       result.errors.push(errorMsg);
       // Don't mark as failure since migration itself succeeded

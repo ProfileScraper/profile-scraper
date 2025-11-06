@@ -21,6 +21,7 @@ export interface SiteProfile {
   retries: number;
   checkpointInterval: number;
   headless?: boolean; // Default true - headless mode for faster scraping
+  overwriteExisting?: boolean; // Default false - if true, re-scraping a URL will overwrite the existing data
 }
 
 export interface PaginationConfig {

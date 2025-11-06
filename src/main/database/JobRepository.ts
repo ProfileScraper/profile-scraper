@@ -1,5 +1,13 @@
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'crypto';
+import { ProductRepository } from './ProductRepository';
+
+export type JobPhase =
+  | 'initializing'
+  | 'gathering_urls'
+  | 'crawling_products'
+  | 'finalizing'
+  | null;
 
 export interface JobRow {
   id: string;
@@ -7,6 +15,7 @@ export interface JobRow {
   started_at: number;
   completed_at: number | null;
   status: string;
+  phase: string | null;
   total_products: number | null;
   products_scraped: number | null;
   success_count: number | null;
@@ -22,6 +31,7 @@ export interface Job {
   startedAt: number;
   completedAt: number | null;
   status: 'running' | 'completed' | 'stopped' | 'failed';
+  phase: JobPhase;
   totalProducts: number | null;
   productsScraped: number | null;
   successCount: number | null;
@@ -32,7 +42,11 @@ export interface Job {
 }
 
 export class JobRepository {
-  constructor(private db: DatabaseSync) {}
+  private productRepo: ProductRepository;
+
+  constructor(private db: DatabaseSync) {
+    this.productRepo = new ProductRepository(db);
+  }
 
   create(data: { profileId: string; totalProducts?: number; outputDir?: string; checkpointPath?: string }): string {
     const id = randomUUID();
@@ -40,8 +54,8 @@ export class JobRepository {
 
     const stmt = this.db.prepare(`
       INSERT INTO jobs (
-        id, profile_id, started_at, status, total_products, output_dir, checkpoint_path
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        id, profile_id, started_at, status, phase, total_products, output_dir, checkpoint_path
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -49,6 +63,7 @@ export class JobRepository {
       data.profileId,
       now,
       'running',
+      'initializing',
       data.totalProducts || null,
       data.outputDir || null,
       data.checkpointPath || null
@@ -64,6 +79,33 @@ export class JobRepository {
     if (!row) return null;
 
     return this.rowToJob(row);
+  }
+
+  updatePaths(id: string, outputDir: string, checkpointPath: string): void {
+    const stmt = this.db.prepare(`
+      UPDATE jobs SET
+        output_dir = ?,
+        checkpoint_path = ?
+      WHERE id = ?
+    `);
+
+    const result = stmt.run(outputDir, checkpointPath, id);
+
+    if (result.changes === 0) {
+      throw new Error(`Job not found: ${id}`);
+    }
+  }
+
+  updatePhase(id: string, phase: JobPhase): void {
+    const stmt = this.db.prepare(`
+      UPDATE jobs SET phase = ? WHERE id = ?
+    `);
+
+    const result = stmt.run(phase, id);
+
+    if (result.changes === 0) {
+      throw new Error(`Job not found: ${id}`);
+    }
   }
 
   updateProgress(id: string, progress: { productsScraped: number; successCount: number; failCount: number }): void {
@@ -149,6 +191,26 @@ export class JobRepository {
     return rows.map(row => this.rowToJob(row));
   }
 
+  delete(id: string): void {
+    // Foreign key constraints will cascade delete products, job_errors, etc.
+    const stmt = this.db.prepare('DELETE FROM jobs WHERE id = ?');
+    const result = stmt.run(id);
+
+    if (result.changes === 0) {
+      throw new Error(`Job not found: ${id}`);
+    }
+  }
+
+  deleteEmptyJobs(): number {
+    // Delete jobs that have no products in the database
+    const stmt = this.db.prepare(`
+      DELETE FROM jobs
+      WHERE id NOT IN (SELECT DISTINCT job_id FROM products)
+    `);
+    const result = stmt.run();
+    return Number(result.changes || 0);
+  }
+
   private rowToJob(row: JobRow): Job {
     const validStatuses: Job['status'][] = ['running', 'completed', 'stopped', 'failed'];
 
@@ -156,14 +218,21 @@ export class JobRepository {
       throw new Error(`Invalid job status: ${row.status}`);
     }
 
+    const validPhases: JobPhase[] = ['initializing', 'gathering_urls', 'crawling_products', 'finalizing', null];
+    const phase = row.phase && validPhases.includes(row.phase as JobPhase) ? (row.phase as JobPhase) : null;
+
+    // Get actual product count from database instead of using cached value
+    const actualProductCount = this.productRepo.countByJobId(row.id);
+
     return {
       id: row.id,
       profileId: row.profile_id,
       startedAt: row.started_at,
       completedAt: row.completed_at,
       status: row.status as Job['status'],
+      phase,
       totalProducts: row.total_products,
-      productsScraped: row.products_scraped,
+      productsScraped: actualProductCount, // Use actual count from products table
       successCount: row.success_count,
       failCount: row.fail_count,
       outputDir: row.output_dir,

@@ -1,101 +1,78 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import { ProductData } from '../../shared/types';
-import { createObjectCsvWriter } from 'csv-writer';
+import { ProductRepository } from '../database/ProductRepository';
+import { DatabaseSync } from 'node:sqlite';
 
 export class StorageManager {
-  private outputDir: string;
-  private jsonPath: string;
-  private csvPath: string;
-  private products: ProductData[] = [];
-  private csvWriter: any;
-  private csvInitialized = false;
+  private productRepo: ProductRepository;
+  private jobId: string;
+  private overwriteExisting: boolean;
 
-  constructor(outputDir: string) {
-    this.outputDir = outputDir;
-    this.jsonPath = path.join(outputDir, 'data.json');
-    this.csvPath = path.join(outputDir, 'data.csv');
-
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
-
-    // Load existing data if present
-    if (fs.existsSync(this.jsonPath)) {
-      const data = fs.readFileSync(this.jsonPath, 'utf-8');
-      this.products = JSON.parse(data);
-    }
+  constructor(db: DatabaseSync, jobId: string, overwriteExisting: boolean = false) {
+    this.productRepo = new ProductRepository(db);
+    this.jobId = jobId;
+    this.overwriteExisting = overwriteExisting;
   }
 
-  async saveProduct(product: ProductData): Promise<void> {
-    this.products.push(product);
-
-    // Save to JSON
-    fs.writeFileSync(this.jsonPath, JSON.stringify(this.products, null, 2));
-
-    // Save to CSV
-    await this.appendToCSV(product);
-  }
-
-  private async appendToCSV(product: ProductData): Promise<void> {
-    // Get all unique field keys across all products
-    const allFields = new Set<string>();
-    this.products.forEach(p => {
-      Object.keys(p.fields).forEach(key => allFields.add(key));
-    });
-
-    const headers = [
-      ...Array.from(allFields).sort(),
-      'url',
-      'scrapedAt',
-    ];
-
-    if (!this.csvInitialized) {
-      // Create CSV with headers
-      this.csvWriter = createObjectCsvWriter({
-        path: this.csvPath,
-        header: headers.map(h => ({ id: h, title: h })),
-      });
-      this.csvInitialized = true;
-
-      // Write all products (including new one)
-      const records = this.products.map(p => ({
-        ...p.fields,
-        url: p.url,
-        scrapedAt: p.scrapedAt,
-      }));
-
-      await this.csvWriter.writeRecords(records);
-    } else {
-      // Append mode: write only the new product
-      this.csvWriter = createObjectCsvWriter({
-        path: this.csvPath,
-        header: headers.map(h => ({ id: h, title: h })),
-        append: true,
-      });
-
-      const record = {
-        ...product.fields,
-        url: product.url,
-        scrapedAt: product.scrapedAt,
-      };
-
-      await this.csvWriter.writeRecords([record]);
+  async saveProduct(product: ProductData): Promise<number | null> {
+    try {
+      if (!this.overwriteExisting) {
+        // Default behavior: insert new product (will throw on duplicate due to UNIQUE constraint)
+        try {
+          const productId = this.productRepo.create(this.jobId, product);
+          return productId;
+        } catch (error) {
+          // Silently skip duplicates in append-only mode
+          if (error instanceof Error && error.message.includes('Duplicate product URL')) {
+            console.log(`[StorageManager] Skipping duplicate URL: ${product.url}`);
+            return null; // Return null for skipped duplicates
+          }
+          throw error;
+        }
+      } else {
+        // Overwrite mode: update if exists, create if not
+        if (this.productRepo.exists(this.jobId, product.url)) {
+          this.productRepo.update(this.jobId, product);
+          console.log(`[StorageManager] Updated existing product: ${product.url}`);
+          // For updates, we need to get the existing product ID
+          const existing = this.productRepo.getByJobId(this.jobId, 1, 0).find(p => p.url === product.url);
+          return existing?.id || null;
+        } else {
+          const productId = this.productRepo.create(this.jobId, product);
+          console.log(`[StorageManager] Created new product: ${product.url}`);
+          return productId;
+        }
+      }
+    } catch (error) {
+      console.error(`[StorageManager] Failed to save product: ${product.url}`, error);
+      throw error;
     }
   }
 
-  getProducts(): ProductData[] {
-    return this.products;
+  /**
+   * Get products for this job with pagination
+   */
+  getProducts(limit: number = 100, offset: number = 0): ProductData[] {
+    const products = this.productRepo.getByJobId(this.jobId, limit, offset);
+
+    return products.map(p => ({
+      url: p.url,
+      scrapedAt: new Date(p.scraped_at).toISOString(),
+      fields: p.fields,
+    }));
   }
 
+  /**
+   * Get total count of products for this job
+   */
+  getProductCount(): number {
+    return this.productRepo.countByJobId(this.jobId);
+  }
+
+  /**
+   * Clear all products for this job
+   */
   clear(): void {
-    this.products = [];
-    if (fs.existsSync(this.jsonPath)) {
-      fs.unlinkSync(this.jsonPath);
-    }
-    if (fs.existsSync(this.csvPath)) {
-      fs.unlinkSync(this.csvPath);
-    }
-    this.csvInitialized = false;
+    const deleted = this.productRepo.deleteByJobId(this.jobId);
+    console.log(`[StorageManager] Cleared ${deleted} products for job ${this.jobId}`);
   }
 }

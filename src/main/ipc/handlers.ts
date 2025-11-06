@@ -72,16 +72,25 @@ export function setupIpcHandlers(mainWindow: Electron.BrowserWindow): void {
         preActions: profileData.preActions,
         pagination: profileData.pagination,
         productLinkSelector: profileData.productLinkSelector,
+        prependDomain: profileData.prependDomain,
         productPageActions: profileData.productPageActions,
         fieldSelectors: profileData.fieldSelectors,
         concurrency: profileData.concurrency,
         delayRange: profileData.delayRange,
         retries: profileData.retries,
         checkpointInterval: profileData.checkpointInterval,
+        headless: profileData.headless,
+        overwriteExisting: profileData.overwriteExisting,
       };
 
-      // Setup output directories
-      const outputDir = path.join(process.cwd(), 'output', profileId);
+      // Create job record first to get the job ID
+      currentJobId = jobRepo.create({
+        profileId,
+      });
+      console.log('[Main Process] Job created:', currentJobId);
+
+      // Setup job-specific output directory and checkpoint
+      const outputDir = path.join(process.cwd(), 'output', profileId, currentJobId);
       const checkpointPath = path.join(outputDir, 'progress.json');
 
       // Ensure output directory exists
@@ -89,21 +98,26 @@ export function setupIpcHandlers(mainWindow: Electron.BrowserWindow): void {
         fs.mkdirSync(outputDir, { recursive: true });
       }
 
+      // Update job with output paths
+      jobRepo.updatePaths(currentJobId, outputDir, checkpointPath);
       console.log('[Main Process] Output directory:', outputDir);
 
-      // Create job record
-      currentJobId = jobRepo.create({
-        profileId,
-        outputDir,
-        checkpointPath,
-      });
-      console.log('[Main Process] Job created:', currentJobId);
-
-      // Create orchestrator
-      orchestrator = new ScrapeOrchestrator(profile, outputDir, checkpointPath);
+      // Create orchestrator with database connection
+      orchestrator = new ScrapeOrchestrator(profile, db, currentJobId, checkpointPath);
       console.log('[Main Process] Orchestrator created');
 
       // Forward events to renderer and update job in database
+      orchestrator.on('phase', (phase) => {
+        if (currentJobId) {
+          try {
+            jobRepo.updatePhase(currentJobId, phase);
+            console.log('[Main Process] Job phase updated:', phase);
+          } catch (error) {
+            console.error('[Main Process] Failed to update job phase:', error);
+          }
+        }
+      });
+
       orchestrator.on('progress', (progress) => {
         if (currentJobId) {
           try {

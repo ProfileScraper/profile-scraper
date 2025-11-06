@@ -29,4 +29,29 @@ export const IPC_CHANNELS = {
   JOB_GET_ERRORS: 'job:get-errors',
   JOB_GET_DATA: 'job:get-data',
   JOB_EXPORT_DATA: 'job:export-data',
+  JOB_DELETE: 'job:delete',
+  JOB_DELETE_EMPTY: 'job:delete-empty',
+  JOB_GET_QUALITY_STATS: 'job:get-quality-stats',
+
+  // Data management operations
+  DATA_GET_PRODUCTS: 'data:get-products',
+  DATA_GET_PRODUCT_COUNT: 'data:get-product-count',
+  DATA_SEARCH_PRODUCTS: 'data:search-products',
+  DATA_DELETE_BY_JOB: 'data:delete-by-job',
+  DATA_DELETE_OLD: 'data:delete-old',
+  DATA_EXPORT: 'data:export',
+  DATA_GET_STATS: 'data:get-stats',
+  DATA_GET_FIELD_NAMES: 'data:get-field-names',
+
+  // Product logs
+  LOGS_GET_BY_PRODUCT_ID: 'logs:get-by-product-id',
+  LOGS_GET_BY_JOB_ID: 'logs:get-by-job-id',
+
+  // Testing
+  PROFILE_TEST: 'profile:test',
+
+  // Inspector
+  INSPECTOR_OPEN: 'inspector:open',
+  INSPECTOR_CLOSE: 'inspector:close',
+  INSPECTOR_SELECT: 'inspector:select',
 } as const;

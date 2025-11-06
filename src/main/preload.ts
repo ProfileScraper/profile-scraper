@@ -26,6 +26,15 @@ const IPC_CHANNELS = {
   JOB_GET_ERRORS: 'job:get-errors',
   JOB_GET_DATA: 'job:get-data',
   JOB_EXPORT_DATA: 'job:export-data',
+  JOB_DELETE: 'job:delete',
+  JOB_DELETE_EMPTY: 'job:delete-empty',
+  JOB_GET_QUALITY_STATS: 'job:get-quality-stats',
+  LOGS_GET_BY_PRODUCT_ID: 'logs:get-by-product-id',
+  LOGS_GET_BY_JOB_ID: 'logs:get-by-job-id',
+  PROFILE_TEST: 'profile:test',
+  INSPECTOR_OPEN: 'inspector:open',
+  INSPECTOR_CLOSE: 'inspector:close',
+  INSPECTOR_SELECT: 'inspector:select',
 };
 
 console.log('[Preload] Preload script starting...');
@@ -69,6 +78,31 @@ try {
   getJobErrors: (jobId: string) => ipcRenderer.invoke(IPC_CHANNELS.JOB_GET_ERRORS, jobId),
   getJobData: (jobId: string) => ipcRenderer.invoke(IPC_CHANNELS.JOB_GET_DATA, jobId),
   exportJobData: (jobId: string, format: 'json' | 'csv' | 'both') => ipcRenderer.invoke(IPC_CHANNELS.JOB_EXPORT_DATA, jobId, format),
+  deleteJob: (jobId: string) => ipcRenderer.invoke(IPC_CHANNELS.JOB_DELETE, jobId),
+  deleteEmptyJobs: () => ipcRenderer.invoke(IPC_CHANNELS.JOB_DELETE_EMPTY),
+  getJobQualityStats: (jobId: string) => ipcRenderer.invoke(IPC_CHANNELS.JOB_GET_QUALITY_STATS, jobId),
+
+  // Product logs
+  getProductLogs: (productId: number) => ipcRenderer.invoke(IPC_CHANNELS.LOGS_GET_BY_PRODUCT_ID, productId),
+  getJobLogs: (jobId: string) => ipcRenderer.invoke(IPC_CHANNELS.LOGS_GET_BY_JOB_ID, jobId),
+
+  // Testing
+  testProfile: (profile: SiteProfile) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_TEST, profile),
+
+  // Inspector
+  openInspector: (url: string, selectorType: string) => ipcRenderer.invoke(IPC_CHANNELS.INSPECTOR_OPEN, url, selectorType),
+  closeInspector: () => ipcRenderer.invoke(IPC_CHANNELS.INSPECTOR_CLOSE),
+  onInspectorSelect: (callback: (selector: string) => void) => {
+    const handler = (_: any, selector: string) => {
+      console.log('[Preload] Received selector from inspector:', selector);
+      callback(selector);
+    };
+    ipcRenderer.on(IPC_CHANNELS.INSPECTOR_SELECT, handler);
+    // Return cleanup function
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.INSPECTOR_SELECT, handler);
+    };
+  },
 });
   console.log('[Preload] electronAPI exposed successfully');
 } catch (error) {

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { useProfileStore } from '../store/profileStore';
 import { Action } from '../../shared/types';
+import type { ProfileTestResult } from '../types/electron';
 
 const TOTAL_STEPS = 6;
 
@@ -25,6 +26,7 @@ export function ProfileBuilder() {
     retries,
     checkpointInterval,
     headless,
+    overwriteExisting,
     preActions,
     productPageActions,
     currentStep,
@@ -35,6 +37,7 @@ export function ProfileBuilder() {
     setPrependDomain,
     addFieldSelector,
     removeFieldSelector,
+    updateFieldSelector,
     setPagination,
     setOrchestratorSettings,
     setHeadless,
@@ -65,6 +68,12 @@ export function ProfileBuilder() {
   const [newFieldSelector, setNewFieldSelector] = useState('');
   const [newFieldAttribute, setNewFieldAttribute] = useState<string>('');
 
+  // Field editing
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editFieldName, setEditFieldName] = useState('');
+  const [editFieldSelector, setEditFieldSelector] = useState('');
+  const [editFieldAttribute, setEditFieldAttribute] = useState<string>('');
+
   // Step 3: Workflow configuration
   const [editingAction, setEditingAction] = useState<{ type: 'pre' | 'product', index: number } | null>(null);
   const [showActionForm, setShowActionForm] = useState<{ type: 'pre' | 'product', actionType: Action['type'] } | null>(null);
@@ -79,7 +88,13 @@ export function ProfileBuilder() {
   const [localRetries, setLocalRetries] = useState(retries);
   const [localCheckpointInterval, setLocalCheckpointInterval] = useState(checkpointInterval);
   const [localHeadless, setLocalHeadless] = useState(headless);
+  const [localOverwriteExisting, setLocalOverwriteExisting] = useState(overwriteExisting);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+
+  // Testing
+  const [testResults, setTestResults] = useState<ProfileTestResult | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
+  const [showTestModal, setShowTestModal] = useState(false);
 
   useEffect(() => {
     const initializeForm = async () => {
@@ -106,7 +121,8 @@ export function ProfileBuilder() {
     setLocalRetries(retries);
     setLocalCheckpointInterval(checkpointInterval);
     setLocalHeadless(headless);
-  }, [name, categoryUrl, productLinkSelector, paginationSelector, paginationType, maxPages, concurrency, delayRange, retries, checkpointInterval, headless]);
+    setLocalOverwriteExisting(overwriteExisting);
+  }, [name, categoryUrl, productLinkSelector, paginationSelector, paginationType, maxPages, concurrency, delayRange, retries, checkpointInterval, headless, overwriteExisting]);
 
   const validateUrl = (url: string): boolean => {
     if (!url.trim()) {
@@ -139,17 +155,63 @@ export function ProfileBuilder() {
     nextStep();
   };
 
-  const handleLoadInspector = () => {
-    if (!validateUrl(localUrl)) {
-      return;
-    }
-    // Placeholder for inspector functionality
-    console.log('Load page in inspector:', localUrl);
-    alert('Inspector functionality will be implemented in a future step');
-  };
 
   const handleBack = () => {
     navigate('/profiles');
+  };
+
+  const handleStepClick = (targetStep: number) => {
+    // Allow going back to any previous step
+    if (targetStep < currentStep) {
+      setCurrentStep(targetStep);
+      return;
+    }
+
+    // Allow going to current step (no-op but valid)
+    if (targetStep === currentStep) {
+      return;
+    }
+
+    // Validate before allowing forward navigation
+    // Step 0: Basic Info - need name and URL
+    if (currentStep === 0 && targetStep > 0) {
+      if (!localName.trim()) {
+        alert('Please enter a profile name before continuing');
+        return;
+      }
+      if (!validateUrl(localUrl)) {
+        return;
+      }
+      // Save step 0 data
+      setName(localName);
+      setCategoryUrl(localUrl);
+    }
+
+    // Step 1: Gather Links - need product link selector
+    if (currentStep <= 1 && targetStep > 1) {
+      if (!localProductLinkSelector.trim()) {
+        alert('Please enter a product link selector before continuing');
+        return;
+      }
+      // Save step 1 data
+      setProductLinkSelector(localProductLinkSelector);
+      setPagination(localPaginationType, localPaginationSelector, localMaxPages);
+    }
+
+    // Step 2: Product Config - need at least one field selector
+    if (currentStep <= 2 && targetStep > 2) {
+      if (Object.keys(fieldSelectors).length === 0) {
+        alert('Please add at least one field selector before continuing');
+        return;
+      }
+    }
+
+    // Step 3: Workflow - no validation needed, actions are optional
+
+    // Step 4: Settings - no validation needed
+
+    // If all validations pass, jump to target step
+    setCurrentStep(targetStep);
   };
 
   // Helper function to suggest attribute based on selector
@@ -201,6 +263,47 @@ export function ProfileBuilder() {
 
   const handleRemoveField = (fieldName: string) => {
     removeFieldSelector(fieldName);
+  };
+
+  const handleEditField = (fieldName: string) => {
+    const selectorValue = fieldSelectors[fieldName];
+    const isObject = typeof selectorValue === 'object';
+
+    setEditingField(fieldName);
+    setEditFieldName(fieldName);
+    setEditFieldSelector(isObject ? selectorValue.selector : selectorValue);
+    setEditFieldAttribute(isObject ? (selectorValue.attribute || '') : '');
+  };
+
+  const handleSaveField = () => {
+    if (!editFieldName.trim() || !editFieldSelector.trim()) {
+      alert('Both field name and selector are required');
+      return;
+    }
+
+    // Check for duplicate field name (only if name changed)
+    if (editFieldName !== editingField && fieldSelectors[editFieldName]) {
+      alert('A field with this name already exists');
+      return;
+    }
+
+    const attribute = editFieldAttribute || undefined;
+    const fieldValue = attribute ? { selector: editFieldSelector.trim(), attribute } : editFieldSelector.trim();
+
+    updateFieldSelector(editingField!, editFieldName.trim(), fieldValue);
+
+    // Clear editing state
+    setEditingField(null);
+    setEditFieldName('');
+    setEditFieldSelector('');
+    setEditFieldAttribute('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingField(null);
+    setEditFieldName('');
+    setEditFieldSelector('');
+    setEditFieldAttribute('');
   };
 
   const handleStep2Next = () => {
@@ -353,12 +456,17 @@ export function ProfileBuilder() {
     setPagination(localPaginationType, paginationSelector, localMaxPages);
 
     // Save orchestrator settings
+    console.log('[ProfileBuilder] Saving orchestrator settings:', {
+      headless: localHeadless,
+      overwriteExisting: localOverwriteExisting,
+    });
     setOrchestratorSettings({
       concurrency: localConcurrency,
       delayRange: [localDelayMin, localDelayMax],
       retries: localRetries,
       checkpointInterval: localCheckpointInterval,
       headless: localHeadless,
+      overwriteExisting: localOverwriteExisting,
     });
 
     nextStep();
@@ -372,6 +480,43 @@ export function ProfileBuilder() {
     } catch (error) {
       console.error('Failed to save profile:', error);
       alert('Failed to save profile. Please try again.');
+    }
+  };
+
+  const handleTestProfile = async () => {
+    try {
+      setIsTesting(true);
+      setTestResults(null);
+
+      // Build profile from current state
+      const testProfile = {
+        name,
+        categoryUrl,
+        productLinkSelector,
+        prependDomain,
+        fieldSelectors,
+        preActions,
+        productPageActions,
+        pagination: {
+          type: paginationType,
+          selector: paginationSelector,
+          maxPages: 1, // Override to test only 1 page
+        },
+        concurrency: 1,
+        delayRange,
+        retries,
+        checkpointInterval,
+        headless: false, // Always headed for testing so user can see
+      };
+
+      const results = await window.electronAPI.testProfile(testProfile);
+      setTestResults(results);
+      setShowTestModal(true);
+    } catch (error) {
+      console.error('Test failed:', error);
+      alert(`Test failed: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsTesting(false);
     }
   };
 
@@ -397,17 +542,26 @@ export function ProfileBuilder() {
             {Array.from({ length: TOTAL_STEPS }, (_, i) => (
               <React.Fragment key={i}>
                 <div className="flex flex-col items-center">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
+                  <button
+                    onClick={() => handleStepClick(i)}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
                       i === currentStep
                         ? 'bg-blue-500 text-white'
                         : i < currentStep
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-200 text-gray-600'
+                        ? 'bg-green-500 text-white hover:bg-green-600 cursor-pointer'
+                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300 cursor-pointer'
+                    }`}
+                    title={`Jump to ${
+                      i === 0 ? 'Basic Info' :
+                      i === 1 ? 'Gather Links' :
+                      i === 2 ? 'Product Config' :
+                      i === 3 ? 'Workflow' :
+                      i === 4 ? 'Settings' :
+                      'Review'
                     }`}
                   >
                     {i < currentStep ? '✓' : i + 1}
-                  </div>
+                  </button>
                   <span className="text-xs mt-2 text-gray-600">
                     {i === 0 && 'Basic Info'}
                     {i === 1 && 'Gather Links'}
@@ -476,20 +630,6 @@ export function ProfileBuilder() {
                 {urlError && <p className="text-xs text-red-500 mt-1">{urlError}</p>}
                 <p className="text-xs text-gray-500 mt-1">
                   The category or listing page URL where products are displayed
-                </p>
-              </div>
-
-              {/* Load Inspector Button */}
-              <div className="pt-4 border-t border-gray-200">
-                <button
-                  onClick={handleLoadInspector}
-                  disabled={!localUrl}
-                  className="w-full bg-gray-100 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-200 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Load Page in Inspector
-                </button>
-                <p className="text-xs text-gray-500 mt-2 text-center">
-                  Open the visual inspector to help configure selectors in the next steps
                 </p>
               </div>
             </div>
@@ -572,6 +712,41 @@ export function ProfileBuilder() {
                   CSS selector for the "Next Page" button or link (leave empty if not applicable)
                 </p>
               </div>
+
+              {/* Selector Help */}
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">Selector Tips</h4>
+                <div className="space-y-2 text-xs text-gray-600">
+                  <div>
+                    <strong className="text-gray-700">Standard CSS:</strong>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">a.product-link</code>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">#product-list {'>'} div</code>
+                  </div>
+                  <div>
+                    <strong className="text-gray-700">Positional:</strong>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">div:first-child</code>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">div:last-child</code>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">div:nth-child(2)</code>
+                  </div>
+                  <div>
+                    <strong className="text-gray-700">Text matching:</strong>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">button:has-text("Buy")</code>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">text="Add to Cart"</code>
+                  </div>
+                  <div>
+                    <strong className="text-gray-700">Visibility:</strong>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">div:visible</code>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">input:enabled</code>
+                  </div>
+                  <div>
+                    <strong className="text-gray-700">XPath:</strong>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">//a[contains(@class, 'product')]</code>
+                  </div>
+                  <p className="text-xs text-gray-500 italic mt-2">
+                    Note: <code className="bg-white px-1 rounded">:contains()</code> is not supported. Use <code className="bg-white px-1 rounded">:has-text()</code> instead.
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Navigation Buttons */}
@@ -609,14 +784,13 @@ export function ProfileBuilder() {
             </p>
 
             <div className="space-y-6">
-              {/* Inspector Mode Notice */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-medium text-blue-900 mb-2">Manual Selector Entry</h3>
-                <p className="text-sm text-blue-800 mb-2">
+              {/* Selector Configuration Notice */}
+              <div className="border rounded-lg p-4 bg-blue-50 border-blue-200">
+                <h3 className="font-medium mb-2 text-blue-900">
+                  Selector Configuration
+                </h3>
+                <p className="text-sm text-blue-800">
                   Enter CSS selectors manually for each field. Use browser DevTools to inspect elements and copy their selectors.
-                </p>
-                <p className="text-xs text-blue-600 italic">
-                  Advanced: Inspector mode coming soon - manually enter CSS selectors for now
                 </p>
               </div>
 
@@ -634,32 +808,104 @@ export function ProfileBuilder() {
                       const selector = isObject ? selectorValue.selector : selectorValue;
                       const attribute = isObject ? selectorValue.attribute : undefined;
 
+                      // Check if this field is being edited
+                      const isEditing = editingField === fieldName;
+
                       return (
                         <div
                           key={fieldName}
-                          className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
+                          className="p-3 bg-gray-50 rounded-lg border border-gray-200"
                         >
-                          <div className="flex-1 grid grid-cols-3 gap-3">
-                            <div>
-                              <span className="text-xs text-gray-500">Field Name:</span>
-                              <p className="font-medium text-gray-800">{fieldName}</p>
+                          {isEditing ? (
+                            // Edit mode
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-3 gap-3">
+                                <div>
+                                  <label className="block text-xs text-gray-600 mb-1">Field Name:</label>
+                                  <input
+                                    type="text"
+                                    value={editFieldName}
+                                    onChange={(e) => setEditFieldName(e.target.value)}
+                                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-gray-600 mb-1">Selector:</label>
+                                  <input
+                                    type="text"
+                                    value={editFieldSelector}
+                                    onChange={(e) => setEditFieldSelector(e.target.value)}
+                                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm font-mono"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-gray-600 mb-1">Extract:</label>
+                                  <select
+                                    value={editFieldAttribute}
+                                    onChange={(e) => setEditFieldAttribute(e.target.value)}
+                                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                                  >
+                                    <option value="">Text content</option>
+                                    <option value="href">href</option>
+                                    <option value="src">src</option>
+                                    <option value="value">value</option>
+                                    <option value="alt">alt</option>
+                                    <option value="title">title</option>
+                                    <option value="data-price">data-price</option>
+                                    <option value="data-id">data-id</option>
+                                  </select>
+                                </div>
+                              </div>
+                              <div className="flex gap-2 justify-end">
+                                <button
+                                  onClick={handleCancelEdit}
+                                  className="px-3 py-1 text-gray-600 hover:bg-gray-200 rounded transition-colors text-sm"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={handleSaveField}
+                                  className="px-3 py-1 bg-blue-500 text-white hover:bg-blue-600 rounded transition-colors text-sm"
+                                >
+                                  Save
+                                </button>
+                              </div>
                             </div>
-                            <div>
-                              <span className="text-xs text-gray-500">Selector:</span>
-                              <p className="font-mono text-sm text-gray-800 truncate">{selector}</p>
+                          ) : (
+                            // View mode
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 grid grid-cols-3 gap-3">
+                                <div>
+                                  <span className="text-xs text-gray-500">Field Name:</span>
+                                  <p className="font-medium text-gray-800">{fieldName}</p>
+                                </div>
+                                <div>
+                                  <span className="text-xs text-gray-500">Selector:</span>
+                                  <p className="font-mono text-sm text-gray-800 truncate">{selector}</p>
+                                </div>
+                                <div>
+                                  <span className="text-xs text-gray-500">Extract:</span>
+                                  <p className="text-sm text-gray-800">{attribute || 'text content'}</p>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleEditField(fieldName)}
+                                  className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors text-sm"
+                                  title="Edit field"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleRemoveField(fieldName)}
+                                  className="px-3 py-1 text-red-600 hover:bg-red-50 rounded transition-colors text-sm"
+                                  title="Remove field"
+                                >
+                                  Remove
+                                </button>
+                              </div>
                             </div>
-                            <div>
-                              <span className="text-xs text-gray-500">Extract:</span>
-                              <p className="text-sm text-gray-800">{attribute || 'text content'}</p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => handleRemoveField(fieldName)}
-                            className="px-3 py-1 text-red-600 hover:bg-red-50 rounded transition-colors text-sm"
-                            title="Remove field"
-                          >
-                            Remove
-                          </button>
+                          )}
                         </div>
                       );
                     })}
@@ -726,6 +972,48 @@ export function ProfileBuilder() {
                 <p className="text-xs text-gray-500 mt-2">
                   Add mappings from field names to CSS selectors for data extraction
                 </p>
+              </div>
+
+              {/* Selector Help */}
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">Playwright Selector Examples</h4>
+                <div className="space-y-2 text-xs text-gray-600">
+                  <div>
+                    <strong className="text-gray-700">Standard CSS:</strong>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">.price</code>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">span.product-title</code>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">#description</code>
+                  </div>
+                  <div>
+                    <strong className="text-gray-700">Positional:</strong>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">.review:first-child</code>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">.review:last-child</code>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">.item:nth-child(3)</code>
+                  </div>
+                  <div>
+                    <strong className="text-gray-700">Text matching:</strong>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">div:has-text("Price:")</code>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">text="Out of Stock"</code>
+                  </div>
+                  <div>
+                    <strong className="text-gray-700">Chaining:</strong>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">.product-info {'>>'} .price</code>
+                    <span className="ml-2 text-gray-500">(child selector)</span>
+                  </div>
+                  <div>
+                    <strong className="text-gray-700">XPath:</strong>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">//span[contains(text(), "$")]</code>
+                  </div>
+                  <div>
+                    <strong className="text-gray-700">Attributes:</strong>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">[data-testid="price"]</code>
+                    <code className="ml-2 bg-white px-2 py-0.5 rounded border">img[alt*="product"]</code>
+                  </div>
+                  <p className="text-xs text-gray-500 italic mt-2 pt-2 border-t border-gray-300">
+                    <strong>Important:</strong> <code className="bg-white px-1 rounded">:contains()</code> is not supported.
+                    Use <code className="bg-white px-1 rounded">:has-text("...")</code> for text matching instead.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -1135,6 +1423,29 @@ export function ProfileBuilder() {
                 </div>
               </div>
 
+              {/* Data Handling */}
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <h3 className="text-lg font-medium text-gray-700 mb-4">Data Handling</h3>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={localOverwriteExisting}
+                      onChange={(e) => setLocalOverwriteExisting(e.target.checked)}
+                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-gray-700">
+                        Overwrite Existing Data
+                      </span>
+                      <p className="text-xs text-gray-600 mt-1">
+                        When enabled, re-scraping a product URL will replace existing data with fresh data. When disabled (default), only new products are scraped.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               {/* Pagination Configuration */}
               <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                 <h3 className="text-lg font-medium text-gray-700 mb-4">Pagination Settings</h3>
@@ -1502,6 +1813,13 @@ export function ProfileBuilder() {
               </button>
               <div className="flex gap-3">
                 <button
+                  onClick={handleTestProfile}
+                  disabled={isTesting}
+                  className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isTesting ? 'Testing...' : 'Quick Test (1 Page + 1 Product)'}
+                </button>
+                <button
                   onClick={() => navigate('/profiles')}
                   className="px-6 py-2 text-gray-600 hover:text-gray-800 font-medium"
                 >
@@ -1514,6 +1832,135 @@ export function ProfileBuilder() {
                 >
                   {isSaving ? 'Saving...' : isEditMode ? 'Update Profile' : 'Save Profile'}
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Test Results Modal */}
+        {showTestModal && testResults && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-800">Test Results</h2>
+                <button
+                  onClick={() => setShowTestModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Overall Status */}
+                <div className={`p-4 rounded-lg ${testResults.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                  <h3 className={`font-semibold text-lg ${testResults.success ? 'text-green-800' : 'text-red-800'}`}>
+                    {testResults.success ? '✓ Test Successful' : '✗ Test Failed'}
+                  </h3>
+                  {testResults.error && (
+                    <p className="text-red-700 mt-2">{testResults.error}</p>
+                  )}
+                </div>
+
+                {/* Category Page Results */}
+                {testResults.categoryPage && (
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-lg text-gray-800 mb-3">Category Page Test</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-2">
+                        <span className="text-gray-600 font-medium min-w-[80px]">URL:</span>
+                        <a href={testResults.categoryPage.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
+                          {testResults.categoryPage.url}
+                        </a>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-gray-600 font-medium min-w-[80px]">URLs Found:</span>
+                        <span className="text-gray-800 font-semibold">{testResults.categoryPage.urlsFound.length}</span>
+                      </div>
+                      {testResults.categoryPage.error && (
+                        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded">
+                          <p className="text-red-700 text-sm">{testResults.categoryPage.error}</p>
+                        </div>
+                      )}
+                      {testResults.categoryPage.urlsFound.length > 0 && (
+                        <details className="mt-3">
+                          <summary className="cursor-pointer text-blue-600 hover:text-blue-800 font-medium">
+                            View all {testResults.categoryPage.urlsFound.length} URLs
+                          </summary>
+                          <div className="mt-2 max-h-60 overflow-auto bg-gray-50 rounded p-3">
+                            {testResults.categoryPage.urlsFound.map((url, i) => (
+                              <div key={i} className="text-sm text-gray-700 py-1 border-b border-gray-200 last:border-0">
+                                <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
+                                  {url}
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Product Page Results */}
+                {testResults.productPage && (
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-lg text-gray-800 mb-3">Product Page Test</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-2">
+                        <span className="text-gray-600 font-medium min-w-[80px]">URL:</span>
+                        <a href={testResults.productPage.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
+                          {testResults.productPage.url}
+                        </a>
+                      </div>
+                      {testResults.productPage.error && (
+                        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded">
+                          <p className="text-red-700 text-sm">{testResults.productPage.error}</p>
+                        </div>
+                      )}
+                      {testResults.productPage.data && Object.keys(testResults.productPage.data.fields).length > 0 && (
+                        <div className="mt-3 bg-gray-50 rounded p-3">
+                          <h4 className="font-medium text-gray-700 mb-2">Extracted Fields:</h4>
+                          <div className="space-y-2">
+                            {Object.entries(testResults.productPage.data.fields).map(([key, value]) => (
+                              <div key={key} className="flex items-start gap-2 pb-2 border-b border-gray-200 last:border-0">
+                                <span className="text-gray-600 font-medium min-w-[120px]">{key}:</span>
+                                <span className="text-gray-800 flex-1 break-words">{value || '(empty)'}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {testResults.productPage.data && Object.keys(testResults.productPage.data.fields).length === 0 && !testResults.productPage.error && (
+                        <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                          <p className="text-yellow-700 text-sm">No fields were extracted. Check your field selectors.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
+                <button
+                  onClick={() => setShowTestModal(false)}
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                >
+                  Close
+                </button>
+                {testResults.success && (
+                  <button
+                    onClick={() => {
+                      setShowTestModal(false);
+                      handleSaveProfile();
+                    }}
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                  >
+                    Looks Good - Save Profile
+                  </button>
+                )}
               </div>
             </div>
           </div>

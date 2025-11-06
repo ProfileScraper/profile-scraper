@@ -1,11 +1,34 @@
 import { SiteProfile, ProductData } from '../../shared/types';
 
+export interface ProfileTestResult {
+  success: boolean;
+  categoryPage?: {
+    url: string;
+    urlsFound: string[];
+    error?: string;
+  };
+  productPage?: {
+    url: string;
+    data: ProductData;
+    error?: string;
+  };
+  error?: string;
+}
+
+export type JobPhase =
+  | 'initializing'
+  | 'gathering_urls'
+  | 'crawling_products'
+  | 'finalizing'
+  | null;
+
 export interface Job {
   id: string;
   profileId: string;
   startedAt: number;
   completedAt: number | null;
   status: 'running' | 'completed' | 'stopped' | 'failed';
+  phase: JobPhase;
   totalProducts: number | null;
   productsScraped: number | null;
   successCount: number | null;
@@ -21,6 +44,39 @@ export interface JobError {
   url: string;
   errorMessage: string;
   timestamp: number;
+}
+
+export interface JobQualityStats {
+  totalProducts: number;
+  totalFields: number;
+  emptyFields: number;
+  nullFields: number;
+  productsWithEmptyFields: number;
+  fieldStats: Array<{
+    fieldName: string;
+    emptyCount: number;
+    nullCount: number;
+    fillRate: number;
+  }>;
+}
+
+export type LogLevel = 'info' | 'warning' | 'error' | 'debug';
+
+export interface ProductLog {
+  id: number;
+  productId: number;
+  timestamp: number;
+  logLevel: LogLevel;
+  message: string;
+  context?: string;
+  fieldName?: string;
+  selector?: string;
+  elementCount?: number;
+  errorMessage?: string;
+}
+
+export interface JobLog extends ProductLog {
+  productUrl: string;
 }
 
 export interface ElectronAPI {
@@ -49,6 +105,21 @@ export interface ElectronAPI {
   getJobErrors: (jobId: string) => Promise<JobError[]>;
   getJobData: (jobId: string) => Promise<ProductData[]>;
   exportJobData: (jobId: string, format: 'json' | 'csv' | 'both') => Promise<{ success: boolean; path?: string; message?: string }>;
+  deleteJob: (jobId: string) => Promise<{ success: boolean }>;
+  deleteEmptyJobs: () => Promise<{ success: boolean; deleted: number }>;
+  getJobQualityStats: (jobId: string) => Promise<JobQualityStats>;
+
+  // Product logs
+  getProductLogs: (productId: number) => Promise<ProductLog[]>;
+  getJobLogs: (jobId: string) => Promise<JobLog[]>;
+
+  // Testing
+  testProfile: (profile: SiteProfile) => Promise<ProfileTestResult>;
+
+  // Inspector
+  openInspector: (url: string, selectorType: string) => Promise<void>;
+  closeInspector: () => Promise<void>;
+  onInspectorSelect: (callback: (selector: string) => void) => (() => void) | void;
 }
 
 declare global {

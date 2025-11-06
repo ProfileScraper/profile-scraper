@@ -20,6 +20,7 @@ export interface ProfileRow {
   retries: number;
   checkpoint_interval: number;
   headless: number;
+  overwrite_existing: number;
 }
 
 export class ProfileRepository {
@@ -34,8 +35,8 @@ export class ProfileRepository {
         id, name, created_at, updated_at, category_url,
         pre_actions, pagination, product_link_selector, prepend_domain,
         product_page_actions, field_selectors, concurrency,
-        delay_min, delay_max, retries, checkpoint_interval, headless
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        delay_min, delay_max, retries, checkpoint_interval, headless, overwrite_existing
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -55,7 +56,8 @@ export class ProfileRepository {
       profile.delayRange[1],
       profile.retries,
       profile.checkpointInterval,
-      profile.headless !== false ? 1 : 0 // Default to headless (1) unless explicitly false
+      profile.headless !== false ? 1 : 0, // Default to headless (1) unless explicitly false
+      profile.overwriteExisting ? 1 : 0 // Default to false (0)
     );
 
     return id;
@@ -84,7 +86,7 @@ export class ProfileRepository {
         name = ?, updated_at = ?, category_url = ?,
         pre_actions = ?, pagination = ?, product_link_selector = ?, prepend_domain = ?,
         product_page_actions = ?, field_selectors = ?, concurrency = ?,
-        delay_min = ?, delay_max = ?, retries = ?, checkpoint_interval = ?, headless = ?
+        delay_min = ?, delay_max = ?, retries = ?, checkpoint_interval = ?, headless = ?, overwrite_existing = ?
       WHERE id = ?
     `);
 
@@ -104,6 +106,7 @@ export class ProfileRepository {
       profile.retries,
       profile.checkpointInterval,
       profile.headless !== false ? 1 : 0,
+      profile.overwriteExisting ? 1 : 0,
       id
     );
   }
@@ -115,6 +118,14 @@ export class ProfileRepository {
 
   private rowToProfile(row: ProfileRow): SiteProfile & { id: string; createdAt: number; updatedAt: number } {
     try {
+      console.log('[ProfileRepository] Row data:', {
+        id: row.id,
+        headless: row.headless,
+        overwrite_existing: row.overwrite_existing,
+        headlessConverted: row.headless === 1,
+        overwriteConverted: row.overwrite_existing === 1
+      });
+
       return {
         id: row.id,
         name: row.name,
@@ -131,7 +142,8 @@ export class ProfileRepository {
         delayRange: [row.delay_min, row.delay_max],
         retries: row.retries,
         checkpointInterval: row.checkpoint_interval,
-        headless: row.headless === 1
+        headless: row.headless === 1,
+        overwriteExisting: row.overwrite_existing === 1
       };
     } catch (error) {
       throw new Error(`Failed to parse profile data for ID ${row.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);

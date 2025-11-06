@@ -1,20 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useScraper } from '../hooks/useScraper';
-import type { Job } from '../types/electron';
+import type { Job, JobQualityStats } from '../types/electron';
 
 interface JobHistoryItem {
   id: string;
   profileName: string;
   startedAt: string;
   duration: number;
-  status: 'completed' | 'failed' | 'stopped';
+  status: 'completed' | 'failed' | 'stopped' | 'running';
+  phase: 'initializing' | 'gathering_urls' | 'crawling_products' | 'finalizing' | null;
   totalProducts: number;
   successCount: number;
   failCount: number;
+  qualityStats?: JobQualityStats;
 }
 
 type FilterType = 'all' | 'completed' | 'failed' | 'last7days';
+
+// Helper to get human-readable phase label
+function getPhaseLabel(phase: JobHistoryItem['phase']): string | null {
+  if (!phase) return null;
+
+  const phaseLabels: Record<NonNullable<JobHistoryItem['phase']>, string> = {
+    'initializing': 'Initializing',
+    'gathering_urls': 'Gathering URLs',
+    'crawling_products': 'Crawling Products',
+    'finalizing': 'Finalizing'
+  };
+
+  return phaseLabels[phase];
+}
 
 export function JobsDashboard() {
   const navigate = useNavigate();
@@ -34,6 +50,7 @@ export function JobsDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [selectedJobForStats, setSelectedJobForStats] = useState<JobHistoryItem | null>(null);
   const itemsPerPage = 10;
 
   // Track elapsed time
@@ -69,26 +86,40 @@ export function JobsDashboard() {
         // Create a map of profile IDs to names for quick lookup
         const profileMap = new Map(profiles.map(p => [p.id, p.name]));
 
-        // Transform Job data to JobHistoryItem format
-        const history: JobHistoryItem[] = jobs
-          .filter(job => job.status !== 'running') // Exclude currently running jobs
-          .map(job => {
+        // Transform Job data to JobHistoryItem format and fetch quality stats
+        const historyPromises = jobs
+          // Include all jobs (running and completed)
+          .map(async (job) => {
             const duration = job.completedAt
               ? Math.floor((job.completedAt - job.startedAt) / 1000)
               : 0;
+
+            // Fetch quality stats for jobs with products
+            let qualityStats: JobQualityStats | undefined;
+            const actualTotal = (job.successCount || 0) + (job.failCount || 0);
+            if (actualTotal > 0) {
+              try {
+                qualityStats = await window.electronAPI.getJobQualityStats(job.id);
+              } catch (error) {
+                console.error(`Failed to load quality stats for job ${job.id}:`, error);
+              }
+            }
 
             return {
               id: job.id,
               profileName: profileMap.get(job.profileId) || 'Unknown Profile',
               startedAt: new Date(job.startedAt).toISOString(),
               duration,
-              status: job.status as 'completed' | 'failed' | 'stopped',
+              status: job.status as 'completed' | 'failed' | 'stopped' | 'running',
+              phase: job.phase,
               totalProducts: job.totalProducts || 0,
               successCount: job.successCount || 0,
               failCount: job.failCount || 0,
+              qualityStats,
             };
           });
 
+        const history = await Promise.all(historyPromises);
         setJobHistory(history);
       } catch (error) {
         console.error('Failed to load job history:', error);
@@ -97,8 +128,8 @@ export function JobsDashboard() {
 
     loadJobHistory();
 
-    // Refresh job history every 30 seconds
-    const intervalId = setInterval(loadJobHistory, 30000);
+    // Refresh job history every 3 seconds to show running jobs
+    const intervalId = setInterval(loadJobHistory, 3000);
 
     return () => clearInterval(intervalId);
   }, []);
@@ -183,7 +214,10 @@ export function JobsDashboard() {
   };
 
   const handleJobClick = (jobId: string) => {
-    navigate(`/jobs/${jobId}`);
+    const job = jobHistory.find(j => j.id === jobId);
+    if (job) {
+      setSelectedJobForStats(job);
+    }
   };
 
   const eta = calculateETA();
@@ -331,6 +365,38 @@ export function JobsDashboard() {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">Job History</h2>
           <div className="flex items-center gap-4">
+            <button
+              onClick={async () => {
+                if (confirm('Delete all jobs with no product data? This cannot be undone.')) {
+                  try {
+                    const result = await window.electronAPI.deleteEmptyJobs();
+                    alert(`Deleted ${result.deleted} empty jobs`);
+                    // Reload job history
+                    const jobs = await window.electronAPI.getAllJobs();
+                    const profiles = await window.electronAPI.getAllProfiles();
+                    const profileMap = new Map(profiles.map(p => [p.id, p.name]));
+                    const history: JobHistoryItem[] = jobs
+                      .filter(job => job.status !== 'running')
+                      .map(job => ({
+                        id: job.id,
+                        profileName: profileMap.get(job.profileId) || 'Unknown Profile',
+                        startedAt: new Date(job.startedAt).toISOString(),
+                        duration: job.completedAt ? Math.floor((job.completedAt - job.startedAt) / 1000) : 0,
+                        status: job.status as 'completed' | 'failed' | 'stopped',
+                        totalProducts: job.totalProducts || 0,
+                        successCount: job.successCount || 0,
+                        failCount: job.failCount || 0,
+                      }));
+                    setJobHistory(history);
+                  } catch (error) {
+                    alert(`Failed to delete empty jobs: ${error}`);
+                  }
+                }
+              }}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+            >
+              Clean Up Empty Jobs
+            </button>
             <label className="text-sm font-medium text-gray-700">Filter:</label>
             <select
               value={filter}
@@ -391,15 +457,20 @@ export function JobsDashboard() {
                       Success Rate
                     </th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                      Data Quality
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {paginatedHistory.map((job) => {
+                    // Calculate success rate based on actual scraped products (success + fail)
+                    const actualTotal = job.successCount + job.failCount;
                     const successRate = calculateSuccessRate(
                       job.successCount,
-                      job.totalProducts
+                      actualTotal
                     );
 
                     return (
@@ -418,19 +489,27 @@ export function JobsDashboard() {
                           {formatDuration(job.duration)}
                         </td>
                         <td className="px-4 py-4">
-                          <span
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                              job.status === 'completed'
-                                ? 'bg-green-100 text-green-800'
-                                : job.status === 'failed'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}
-                          >
-                            {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-600">
+                          <div className="flex flex-col gap-1">
+                            <span
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                                job.status === 'completed'
+                                  ? 'bg-green-100 text-green-800'
+                                  : job.status === 'failed'
+                                  ? 'bg-red-100 text-red-800'
+                                  : job.status === 'running'
+                                  ? 'bg-blue-100 text-blue-800 animate-pulse'
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}
+                            >
+                              {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                            </span>
+                            {job.status === 'running' && job.phase && (
+                              <span className="text-xs text-gray-600 italic">
+                                {getPhaseLabel(job.phase)}
+                              </span>
+                            )}
+                          </div>
+                        </td>                        <td className="px-4 py-4 text-sm text-gray-600">
                           <div className="flex flex-col">
                             <span className="font-medium">{job.totalProducts}</span>
                             <span className="text-xs text-gray-500">
@@ -457,6 +536,30 @@ export function JobsDashboard() {
                             </span>
                           </div>
                         </td>
+                        <td className="px-4 py-4 text-sm text-gray-600">
+                          {job.qualityStats ? (
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs">
+                                {job.qualityStats.productsWithEmptyFields > 0 ? (
+                                  <span className="text-orange-600 font-medium">
+                                    {job.qualityStats.productsWithEmptyFields} products with empty fields
+                                  </span>
+                                ) : (
+                                  <span className="text-green-600 font-medium">
+                                    All fields complete
+                                  </span>
+                                )}
+                              </span>
+                              {job.qualityStats.emptyFields > 0 && (
+                                <span className="text-xs text-gray-500">
+                                  {job.qualityStats.emptyFields} / {job.qualityStats.totalFields} fields empty
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">No data</span>
+                          )}
+                        </td>
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-2">
                             <button
@@ -482,6 +585,39 @@ export function JobsDashboard() {
                               className="text-green-600 hover:text-green-800 text-sm font-medium"
                             >
                               Export
+                            </button>
+                            <span className="text-gray-300">|</span>
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (confirm(`Delete job "${job.profileName}" from ${formatDateTime(job.startedAt)}?\n\nThis will permanently delete:\n• Job record\n• ${job.totalProducts} product(s)\n• Associated data\n\nThis cannot be undone.`)) {
+                                  try {
+                                    await window.electronAPI.deleteJob(job.id);
+                                    // Reload job history
+                                    const jobs = await window.electronAPI.getAllJobs();
+                                    const profiles = await window.electronAPI.getAllProfiles();
+                                    const profileMap = new Map(profiles.map(p => [p.id, p.name]));
+                                    const history: JobHistoryItem[] = jobs
+                                      .filter(j => j.status !== 'running')
+                                      .map(j => ({
+                                        id: j.id,
+                                        profileName: profileMap.get(j.profileId) || 'Unknown Profile',
+                                        startedAt: new Date(j.startedAt).toISOString(),
+                                        duration: j.completedAt ? Math.floor((j.completedAt - j.startedAt) / 1000) : 0,
+                                        status: j.status as 'completed' | 'failed' | 'stopped',
+                                        totalProducts: j.totalProducts || 0,
+                                        successCount: j.successCount || 0,
+                                        failCount: j.failCount || 0,
+                                      }));
+                                    setJobHistory(history);
+                                  } catch (error) {
+                                    alert(`Failed to delete job: ${error}`);
+                                  }
+                                }
+                              }}
+                              className="text-red-600 hover:text-red-800 text-sm font-medium"
+                            >
+                              Delete
                             </button>
                           </div>
                         </td>
@@ -536,6 +672,137 @@ export function JobsDashboard() {
           </>
         )}
       </div>
+
+      {/* Quality Stats Modal */}
+      {selectedJobForStats && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">Data Quality Report</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {selectedJobForStats.profileName} - {formatDateTime(selectedJobForStats.startedAt)}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedJobForStats(null)}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {selectedJobForStats.qualityStats ? (
+                <>
+                  {/* Overall Statistics */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <p className="text-sm text-blue-600 font-medium mb-1">Total Products</p>
+                      <p className="text-2xl font-bold text-blue-800">
+                        {selectedJobForStats.qualityStats.totalProducts}
+                      </p>
+                    </div>
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <p className="text-sm text-purple-600 font-medium mb-1">Total Fields</p>
+                      <p className="text-2xl font-bold text-purple-800">
+                        {selectedJobForStats.qualityStats.totalFields}
+                      </p>
+                    </div>
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                      <p className="text-sm text-orange-600 font-medium mb-1">Products w/ Empty</p>
+                      <p className="text-2xl font-bold text-orange-800">
+                        {selectedJobForStats.qualityStats.productsWithEmptyFields}
+                      </p>
+                    </div>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <p className="text-sm text-red-600 font-medium mb-1">Empty Fields</p>
+                      <p className="text-2xl font-bold text-red-800">
+                        {selectedJobForStats.qualityStats.emptyFields}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Field-Level Statistics */}
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-800 mb-4">Field-Level Statistics</h3>
+                    {selectedJobForStats.qualityStats.fieldStats.length === 0 ? (
+                      <p className="text-gray-500 text-center py-8">No fields found</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {selectedJobForStats.qualityStats.fieldStats.map((field) => (
+                          <div key={field.fieldName} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-medium text-gray-800">{field.fieldName}</span>
+                              <span className={`text-sm font-bold ${
+                                field.fillRate >= 90 ? 'text-green-600' :
+                                field.fillRate >= 70 ? 'text-yellow-600' :
+                                'text-red-600'
+                              }`}>
+                                {field.fillRate}% filled
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-4 text-xs text-gray-600">
+                              <span>Empty: {field.emptyCount}</span>
+                              <span>Null: {field.nullCount}</span>
+                            </div>
+                            {/* Fill Rate Bar */}
+                            <div className="mt-2 bg-gray-200 rounded-full h-2">
+                              <div
+                                className={`h-2 rounded-full ${
+                                  field.fillRate >= 90 ? 'bg-green-500' :
+                                  field.fillRate >= 70 ? 'bg-yellow-500' :
+                                  'bg-red-500'
+                                }`}
+                                style={{ width: `${field.fillRate}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Summary Message */}
+                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      <strong>Summary:</strong>{' '}
+                      {selectedJobForStats.qualityStats.emptyFields === 0 ? (
+                        'All fields were successfully scraped with no empty values.'
+                      ) : (
+                        `${selectedJobForStats.qualityStats.emptyFields} out of ${selectedJobForStats.qualityStats.totalFields} fields (${Math.round((selectedJobForStats.qualityStats.emptyFields / selectedJobForStats.qualityStats.totalFields) * 100)}%) are empty or null. Consider reviewing the scraping configuration for fields with low fill rates.`
+                      )}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 text-lg">No quality statistics available for this job.</p>
+                  <p className="text-gray-400 text-sm mt-2">This job may not have any scraped products.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end gap-2">
+              <button
+                onClick={() => handleViewData(selectedJobForStats.id)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+              >
+                View Product Data
+              </button>
+              <button
+                onClick={() => setSelectedJobForStats(null)}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
