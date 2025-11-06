@@ -194,12 +194,10 @@ export function JobDataViewer() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading job data...</p>
-          </div>
+      <div className="h-full flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading job data...</p>
         </div>
       </div>
     );
@@ -207,32 +205,30 @@ export function JobDataViewer() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-100 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <h2 className="text-xl font-bold text-red-800 mb-2">Error</h2>
-            <p className="text-red-700">{error}</p>
-            <button
-              onClick={() => navigate('/jobs')}
-              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              Back to Jobs
-            </button>
-          </div>
+      <div className="h-full flex items-center justify-center bg-white p-8">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-lg">
+          <h2 className="text-xl font-bold text-red-800 mb-2">Error</h2>
+          <p className="text-red-700">{error}</p>
+          <button
+            onClick={() => navigate('/jobs')}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Back to Jobs
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+    <div className="h-full flex flex-col bg-white">
+      {/* Header */}
+      <div className="border-b border-gray-200 px-8 py-6">
+        <div className="flex justify-between items-start">
           <div>
             <button
               onClick={() => navigate('/jobs')}
-              className="text-blue-600 hover:text-blue-800 mb-2 flex items-center gap-1"
+              className="text-blue-600 hover:text-blue-800 mb-2 flex items-center gap-1 text-sm"
             >
               ← Back to Jobs
             </button>
@@ -282,9 +278,11 @@ export function JobDataViewer() {
             </button>
           </div>
         </div>
+      </div>
 
+      <div className="flex-1 overflow-auto">
         {data.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
+          <div className="flex items-center justify-center h-full p-12">
             <svg
               className="w-16 h-16 mx-auto text-gray-400 mb-4"
               fill="none"
@@ -298,10 +296,12 @@ export function JobDataViewer() {
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            <p className="text-gray-500 text-lg">No data available for this job</p>
+            <div className="text-center">
+              <p className="text-gray-500 text-lg">No data available for this job</p>
+            </div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow">
+          <div className="mx-8 my-6 bg-gray-50 border border-gray-200 rounded-lg">
             {/* Search and Filter Controls */}
             <div className="p-4 border-b border-gray-200 space-y-4">
               {/* Search */}

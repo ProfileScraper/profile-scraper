@@ -94,10 +94,11 @@ export function JobsDashboard() {
               ? Math.floor((job.completedAt - job.startedAt) / 1000)
               : 0;
 
-            // Fetch quality stats for jobs with products
+            // Fetch quality stats only for completed/stopped/failed jobs with products
             let qualityStats: JobQualityStats | undefined;
             const actualTotal = (job.successCount || 0) + (job.failCount || 0);
-            if (actualTotal > 0) {
+            const isJobFinished = job.status !== 'running';
+            if (actualTotal > 0 && isJobFinished) {
               try {
                 qualityStats = await window.electronAPI.getJobQualityStats(job.id);
               } catch (error) {
@@ -223,12 +224,17 @@ export function JobsDashboard() {
   const eta = calculateETA();
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">Jobs Dashboard</h1>
+    <div className="h-full flex flex-col bg-white">
+      {/* Header */}
+      <div className="border-b border-gray-200 px-8 py-6">
+        <h1 className="text-3xl font-bold text-gray-800">Jobs Dashboard</h1>
+      </div>
 
-      {/* Current Job Panel */}
-      {isRunning && progress && (
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+      <div className="flex-1 overflow-auto">
+        <div className="px-8 py-6">
+          {/* Current Job Panel */}
+          {isRunning && progress && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
           <div className="flex justify-between items-start mb-6">
             <h2 className="text-2xl font-bold text-gray-800">Current Job</h2>
             <div className="flex gap-2">
@@ -355,13 +361,13 @@ export function JobsDashboard() {
                   </div>
                 ))
               )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Job History Section */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
+        {/* Job History Section */}
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">Job History</h2>
           <div className="flex items-center gap-4">
@@ -509,9 +515,10 @@ export function JobsDashboard() {
                               </span>
                             )}
                           </div>
-                        </td>                        <td className="px-4 py-4 text-sm text-gray-600">
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-600">
                           <div className="flex flex-col">
-                            <span className="font-medium">{job.totalProducts}</span>
+                            <span className="font-medium">{job.successCount + job.failCount}</span>
                             <span className="text-xs text-gray-500">
                               {job.successCount} success / {job.failCount} failed
                             </span>
@@ -537,7 +544,9 @@ export function JobsDashboard() {
                           </div>
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-600">
-                          {job.qualityStats ? (
+                          {job.status === 'running' ? (
+                            <span className="text-xs text-blue-600 italic">Pending...</span>
+                          ) : job.qualityStats ? (
                             <div className="flex flex-col gap-1">
                               <span className="text-xs">
                                 {job.qualityStats.productsWithEmptyFields > 0 ? (
@@ -669,8 +678,10 @@ export function JobsDashboard() {
                 </div>
               </div>
             )}
-          </>
-        )}
+            </>
+          )}
+        </div>
+        </div>
       </div>
 
       {/* Quality Stats Modal */}

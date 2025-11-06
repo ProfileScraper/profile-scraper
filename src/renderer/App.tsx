@@ -5,6 +5,7 @@ import { ProfileLibrary } from './components/ProfileLibrary';
 import { ProfileBuilder } from './components/ProfileBuilder';
 import { JobsDashboard } from './components/JobsDashboard';
 import { JobDataViewer } from './components/JobDataViewer';
+import { Help } from './components/Help';
 import './styles/index.css';
 
 export function App() {
@@ -20,6 +21,7 @@ export function App() {
             <Route path="/profiles/:id/edit" element={<ProfileBuilder />} />
             <Route path="/jobs" element={<JobsDashboard />} />
             <Route path="/jobs/:id/data" element={<JobDataViewer />} />
+            <Route path="/help" element={<Help />} />
           </Routes>
         </main>
       </div>
