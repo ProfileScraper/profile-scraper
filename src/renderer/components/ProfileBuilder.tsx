@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { useProfileStore } from '../store/profileStore';
+import { Action } from '../../shared/types';
 
 const TOTAL_STEPS = 5;
 
@@ -15,6 +17,8 @@ export function ProfileBuilder() {
     productLinkSelector,
     fieldSelectors,
     paginationSelector,
+    preActions,
+    productPageActions,
     currentStep,
     setName,
     setCategoryUrl,
@@ -22,6 +26,14 @@ export function ProfileBuilder() {
     addFieldSelector,
     removeFieldSelector,
     setPagination,
+    addPreAction,
+    removePreAction,
+    updatePreAction,
+    reorderPreActions,
+    addProductPageAction,
+    removeProductPageAction,
+    updateProductPageAction,
+    reorderProductPageActions,
     setCurrentStep,
     nextStep,
     previousStep,
@@ -38,6 +50,11 @@ export function ProfileBuilder() {
   const [localPaginationSelector, setLocalPaginationSelector] = useState(paginationSelector);
   const [newFieldName, setNewFieldName] = useState('');
   const [newFieldSelector, setNewFieldSelector] = useState('');
+
+  // Step 3: Workflow configuration
+  const [editingAction, setEditingAction] = useState<{ type: 'pre' | 'product', index: number } | null>(null);
+  const [showActionForm, setShowActionForm] = useState<{ type: 'pre' | 'product', actionType: Action['type'] } | null>(null);
+  const [actionFormData, setActionFormData] = useState<Partial<Action>>({});
 
   useEffect(() => {
     const initializeForm = async () => {
@@ -142,6 +159,123 @@ export function ProfileBuilder() {
     }
 
     nextStep();
+  };
+
+  // Step 3 handlers
+  const handleAddAction = (sectionType: 'pre' | 'product', actionType: Action['type']) => {
+    setShowActionForm({ type: sectionType, actionType });
+    setActionFormData({ type: actionType, optional: false });
+  };
+
+  const handleSaveAction = () => {
+    if (!showActionForm) return;
+
+    const action = actionFormData as Action;
+
+    // Validate action
+    if ((action.type === 'clickElement' || action.type === 'waitForSelector' || action.type === 'type') && !action.selector?.trim()) {
+      alert('Selector is required for this action');
+      return;
+    }
+
+    if (action.type === 'sleep' && (!action.duration || action.duration <= 0)) {
+      alert('Duration is required for sleep action');
+      return;
+    }
+
+    if (action.type === 'scrollTo' && action.duration === undefined) {
+      alert('Position is required for scroll action');
+      return;
+    }
+
+    if (action.type === 'type' && !action.text?.trim()) {
+      alert('Text is required for type action');
+      return;
+    }
+
+    if (editingAction) {
+      // Update existing action
+      if (editingAction.type === 'pre') {
+        updatePreAction(editingAction.index, action);
+      } else {
+        updateProductPageAction(editingAction.index, action);
+      }
+      setEditingAction(null);
+    } else {
+      // Add new action
+      if (showActionForm.type === 'pre') {
+        addPreAction(action);
+      } else {
+        addProductPageAction(action);
+      }
+    }
+
+    setShowActionForm(null);
+    setActionFormData({});
+  };
+
+  const handleCancelAction = () => {
+    setShowActionForm(null);
+    setActionFormData({});
+    setEditingAction(null);
+  };
+
+  const handleEditAction = (sectionType: 'pre' | 'product', index: number) => {
+    const action = sectionType === 'pre' ? preActions[index] : productPageActions[index];
+    setEditingAction({ type: sectionType, index });
+    setActionFormData(action);
+    setShowActionForm({ type: sectionType, actionType: action.type });
+  };
+
+  const handleDeleteAction = (sectionType: 'pre' | 'product', index: number) => {
+    if (sectionType === 'pre') {
+      removePreAction(index);
+    } else {
+      removeProductPageAction(index);
+    }
+  };
+
+  const handleDragEnd = (result: DropResult, sectionType: 'pre' | 'product') => {
+    if (!result.destination) return;
+
+    const startIndex = result.source.index;
+    const endIndex = result.destination.index;
+
+    if (startIndex === endIndex) return;
+
+    if (sectionType === 'pre') {
+      reorderPreActions(startIndex, endIndex);
+    } else {
+      reorderProductPageActions(startIndex, endIndex);
+    }
+  };
+
+  const getActionLabel = (action: Action): string => {
+    switch (action.type) {
+      case 'clickElement':
+        return `Click: ${action.selector || '(no selector)'}`;
+      case 'sleep':
+        return `Sleep: ${action.duration}ms`;
+      case 'scrollTo':
+        return `Scroll to: ${action.duration || 0}px`;
+      case 'waitForSelector':
+        return `Wait for: ${action.selector || '(no selector)'}`;
+      case 'type':
+        return `Type: "${action.text}" into ${action.selector || '(no selector)'}`;
+      default:
+        return action.type;
+    }
+  };
+
+  const getActionIcon = (actionType: Action['type']): string => {
+    switch (actionType) {
+      case 'clickElement': return '👆';
+      case 'sleep': return '⏱️';
+      case 'scrollTo': return '📜';
+      case 'waitForSelector': return '⏳';
+      case 'type': return '⌨️';
+      default: return '•';
+    }
   };
 
   return (
@@ -418,8 +552,361 @@ export function ProfileBuilder() {
           </div>
         )}
 
-        {/* Placeholder for steps 3-5 */}
-        {currentStep > 1 && (
+        {/* Step 3: Configure Workflow */}
+        {currentStep === 2 && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-6 text-gray-800">Configure Workflow</h2>
+
+            {/* Pre-Actions Section */}
+            <div className="mb-8">
+              <h3 className="text-lg font-medium text-gray-700 mb-3">Pre-Actions</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Actions to run once before scraping starts (e.g., login, accept cookies)
+              </p>
+
+              {/* Action Toolbar */}
+              <div className="mb-4 flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleAddAction('pre', 'clickElement')}
+                  className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                >
+                  {getActionIcon('clickElement')} Click Element
+                </button>
+                <button
+                  onClick={() => handleAddAction('pre', 'sleep')}
+                  className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                >
+                  {getActionIcon('sleep')} Wait/Sleep
+                </button>
+                <button
+                  onClick={() => handleAddAction('pre', 'scrollTo')}
+                  className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                >
+                  {getActionIcon('scrollTo')} Scroll To
+                </button>
+                <button
+                  onClick={() => handleAddAction('pre', 'waitForSelector')}
+                  className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                >
+                  {getActionIcon('waitForSelector')} Wait For Selector
+                </button>
+                <button
+                  onClick={() => handleAddAction('pre', 'type')}
+                  className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                >
+                  {getActionIcon('type')} Type Text
+                </button>
+              </div>
+
+              {/* Action List */}
+              <DragDropContext onDragEnd={(result) => handleDragEnd(result, 'pre')}>
+                <Droppable droppableId="pre-actions">
+                  {(provided) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="space-y-2 min-h-[50px] border-2 border-dashed border-gray-200 rounded-lg p-2"
+                    >
+                      {preActions.length === 0 && (
+                        <div className="text-center py-6 text-gray-400 text-sm">
+                          No pre-actions configured. Add actions using the buttons above.
+                        </div>
+                      )}
+                      {preActions.map((action, index) => (
+                        <Draggable key={`pre-${index}`} draggableId={`pre-${index}`} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={`flex items-center gap-3 p-3 bg-white border rounded-lg ${
+                                snapshot.isDragging ? 'shadow-lg border-blue-300' : 'border-gray-200'
+                              }`}
+                            >
+                              <div className="text-gray-400">☰</div>
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-800 text-sm">
+                                  {getActionIcon(action.type)} {getActionLabel(action)}
+                                </div>
+                                {action.optional && (
+                                  <span className="text-xs text-gray-500 italic">Optional</span>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => handleEditAction('pre', index)}
+                                className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors text-sm"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteAction('pre', index)}
+                                className="px-3 py-1 text-red-600 hover:bg-red-50 rounded transition-colors text-sm"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
+            </div>
+
+            {/* Product Page Actions Section */}
+            <div className="mb-8">
+              <h3 className="text-lg font-medium text-gray-700 mb-3">Product Page Actions</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Actions to run on each product page (e.g., expand details, click tabs)
+              </p>
+
+              {/* Action Toolbar */}
+              <div className="mb-4 flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleAddAction('product', 'clickElement')}
+                  className="px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
+                >
+                  {getActionIcon('clickElement')} Click Element
+                </button>
+                <button
+                  onClick={() => handleAddAction('product', 'sleep')}
+                  className="px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
+                >
+                  {getActionIcon('sleep')} Wait/Sleep
+                </button>
+                <button
+                  onClick={() => handleAddAction('product', 'scrollTo')}
+                  className="px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
+                >
+                  {getActionIcon('scrollTo')} Scroll To
+                </button>
+                <button
+                  onClick={() => handleAddAction('product', 'waitForSelector')}
+                  className="px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
+                >
+                  {getActionIcon('waitForSelector')} Wait For Selector
+                </button>
+                <button
+                  onClick={() => handleAddAction('product', 'type')}
+                  className="px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
+                >
+                  {getActionIcon('type')} Type Text
+                </button>
+              </div>
+
+              {/* Action List */}
+              <DragDropContext onDragEnd={(result) => handleDragEnd(result, 'product')}>
+                <Droppable droppableId="product-actions">
+                  {(provided) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="space-y-2 min-h-[50px] border-2 border-dashed border-gray-200 rounded-lg p-2"
+                    >
+                      {productPageActions.length === 0 && (
+                        <div className="text-center py-6 text-gray-400 text-sm">
+                          No product page actions configured. Add actions using the buttons above.
+                        </div>
+                      )}
+                      {productPageActions.map((action, index) => (
+                        <Draggable key={`product-${index}`} draggableId={`product-${index}`} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={`flex items-center gap-3 p-3 bg-white border rounded-lg ${
+                                snapshot.isDragging ? 'shadow-lg border-green-300' : 'border-gray-200'
+                              }`}
+                            >
+                              <div className="text-gray-400">☰</div>
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-800 text-sm">
+                                  {getActionIcon(action.type)} {getActionLabel(action)}
+                                </div>
+                                {action.optional && (
+                                  <span className="text-xs text-gray-500 italic">Optional</span>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => handleEditAction('product', index)}
+                                className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors text-sm"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteAction('product', index)}
+                                className="px-3 py-1 text-red-600 hover:bg-red-50 rounded transition-colors text-sm"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
+            </div>
+
+            {/* Action Configuration Form */}
+            {showActionForm && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800">
+                    {editingAction ? 'Edit' : 'Add'} {showActionForm.actionType === 'clickElement' ? 'Click Element' :
+                    showActionForm.actionType === 'sleep' ? 'Wait/Sleep' :
+                    showActionForm.actionType === 'scrollTo' ? 'Scroll To' :
+                    showActionForm.actionType === 'waitForSelector' ? 'Wait For Selector' :
+                    'Type Text'} Action
+                  </h3>
+
+                  <div className="space-y-4">
+                    {/* Selector input for click, wait, and type */}
+                    {(showActionForm.actionType === 'clickElement' ||
+                      showActionForm.actionType === 'waitForSelector' ||
+                      showActionForm.actionType === 'type') && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          CSS Selector <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={actionFormData.selector || ''}
+                          onChange={(e) => setActionFormData({ ...actionFormData, selector: e.target.value })}
+                          placeholder="e.g., button.accept-cookies"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                        />
+                      </div>
+                    )}
+
+                    {/* Duration input for sleep */}
+                    {showActionForm.actionType === 'sleep' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Duration (milliseconds) <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          value={actionFormData.duration || ''}
+                          onChange={(e) => setActionFormData({ ...actionFormData, duration: parseInt(e.target.value) || 0 })}
+                          placeholder="e.g., 2000"
+                          min="0"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    )}
+
+                    {/* Position input for scroll */}
+                    {showActionForm.actionType === 'scrollTo' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Scroll Position (pixels) <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          value={actionFormData.duration !== undefined ? actionFormData.duration : ''}
+                          onChange={(e) => setActionFormData({ ...actionFormData, duration: parseInt(e.target.value) || 0 })}
+                          placeholder="e.g., 500"
+                          min="0"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Use 0 to scroll to top, or a pixel value to scroll down
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Text input for type action */}
+                    {showActionForm.actionType === 'type' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Text to Type <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={actionFormData.text || ''}
+                          onChange={(e) => setActionFormData({ ...actionFormData, text: e.target.value })}
+                          placeholder="e.g., search query"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    )}
+
+                    {/* Timeout for waitForSelector */}
+                    {showActionForm.actionType === 'waitForSelector' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Timeout (milliseconds) <span className="text-gray-400">(Optional)</span>
+                        </label>
+                        <input
+                          type="number"
+                          value={actionFormData.timeout || ''}
+                          onChange={(e) => setActionFormData({ ...actionFormData, timeout: parseInt(e.target.value) || undefined })}
+                          placeholder="e.g., 5000"
+                          min="0"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    )}
+
+                    {/* Optional checkbox */}
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="optional"
+                        checked={actionFormData.optional || false}
+                        onChange={(e) => setActionFormData({ ...actionFormData, optional: e.target.checked })}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label htmlFor="optional" className="ml-2 text-sm text-gray-700">
+                        Optional (fail gracefully if this action fails)
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-6">
+                    <button
+                      onClick={handleCancelAction}
+                      className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveAction}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                    >
+                      {editingAction ? 'Update' : 'Add'} Action
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+              <button
+                onClick={previousStep}
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+              >
+                Back
+              </button>
+              <button
+                onClick={nextStep}
+                className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+              >
+                Next: Configure Settings
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Placeholder for steps 4-5 */}
+        {currentStep > 2 && (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-6 text-gray-800">
               Step {currentStep + 1}: Coming Soon

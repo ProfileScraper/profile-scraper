@@ -42,9 +42,11 @@ interface ProfileStoreActions {
   addPreAction: (action: Action) => void;
   removePreAction: (index: number) => void;
   updatePreAction: (index: number, action: Action) => void;
+  reorderPreActions: (startIndex: number, endIndex: number) => void;
   addProductPageAction: (action: Action) => void;
   removeProductPageAction: (index: number) => void;
   updateProductPageAction: (index: number, action: Action) => void;
+  reorderProductPageActions: (startIndex: number, endIndex: number) => void;
   setPagination: (type: 'button' | 'infinite' | 'url', selector: string, maxPages: number) => void;
   setOrchestratorSettings: (settings: { concurrency?: number; delayRange?: [number, number]; retries?: number; checkpointInterval?: number }) => void;
 
@@ -112,6 +114,13 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     preActions: state.preActions.map((a, i) => i === index ? action : a)
   })),
 
+  reorderPreActions: (startIndex, endIndex) => set((state) => {
+    const result = Array.from(state.preActions);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+    return { preActions: result };
+  }),
+
   addProductPageAction: (action) => set((state) => ({
     productPageActions: [...state.productPageActions, action]
   })),
@@ -123,6 +132,13 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   updateProductPageAction: (index, action) => set((state) => ({
     productPageActions: state.productPageActions.map((a, i) => i === index ? action : a)
   })),
+
+  reorderProductPageActions: (startIndex, endIndex) => set((state) => {
+    const result = Array.from(state.productPageActions);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+    return { productPageActions: result };
+  }),
 
   setPagination: (type, selector, maxPages) => set({
     paginationType: type,
