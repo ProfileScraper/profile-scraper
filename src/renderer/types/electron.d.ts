@@ -1,3 +1,5 @@
+import { SiteProfile } from '../../shared/types';
+
 export interface ElectronAPI {
   // Existing methods
   startScrape: (profileName: string) => Promise<{ success: boolean }>;
@@ -12,11 +14,11 @@ export interface ElectronAPI {
   onComplete: (callback: (stats: any) => void) => void;
 
   // Profile operations
-  createProfile: (profile: any) => Promise<{ id: string }>;
-  updateProfile: (id: string, profile: any) => Promise<{ success: boolean }>;
+  createProfile: (profile: SiteProfile) => Promise<{ id: string }>;
+  updateProfile: (id: string, profile: SiteProfile) => Promise<{ success: boolean }>;
   deleteProfile: (id: string) => Promise<{ success: boolean }>;
-  getProfile: (id: string) => Promise<any>;
-  getAllProfiles: () => Promise<any[]>;
+  getProfile: (id: string) => Promise<SiteProfile | null>;
+  getAllProfiles: () => Promise<SiteProfile[]>;
 }
 
 declare global {

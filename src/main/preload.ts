@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type { SiteProfile } from '../shared/types';
 
 // Inline IPC channel constants to avoid module resolution issues in sandboxed preload
 const IPC_CHANNELS = {
@@ -51,8 +52,8 @@ try {
   },
 
   // Profile operations
-  createProfile: (profile: any) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_CREATE, profile),
-  updateProfile: (id: string, profile: any) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_UPDATE, id, profile),
+  createProfile: (profile: SiteProfile) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_CREATE, profile),
+  updateProfile: (id: string, profile: SiteProfile) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_UPDATE, id, profile),
   deleteProfile: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_DELETE, id),
   getProfile: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_GET, id),
   getAllProfiles: () => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_GET_ALL),
