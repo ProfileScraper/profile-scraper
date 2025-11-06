@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
 import { setupIpcHandlers } from './ipc/handlers';
 import { setupProfileHandlers } from './ipc/profileHandlers';
+import { setupJobHandlers } from './ipc/jobHandlers';
 import { initDatabase } from './database/db';
 
 let mainWindow: BrowserWindow | null = null;
@@ -36,6 +37,7 @@ function createWindow(): void {
 
   setupIpcHandlers(mainWindow);
   setupProfileHandlers();
+  setupJobHandlers();
 
   mainWindow.on('closed', () => {
     mainWindow = null;

@@ -22,4 +22,9 @@ export const IPC_CHANNELS = {
   PROFILE_DELETE: 'profile:delete',
   PROFILE_GET: 'profile:get',
   PROFILE_GET_ALL: 'profile:get-all',
+
+  // Job operations
+  JOB_GET_ALL: 'job:get-all',
+  JOB_GET: 'job:get',
+  JOB_GET_ERRORS: 'job:get-errors',
 } as const;

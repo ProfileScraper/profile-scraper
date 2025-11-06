@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useScraper } from '../hooks/useScraper';
+import type { Job } from '../types/electron';
 
 interface JobHistoryItem {
   id: string;
@@ -58,61 +59,48 @@ export function JobsDashboard() {
     return () => clearInterval(interval);
   }, [isRunning, isPaused, startTime]);
 
-  // Mock job history data (will be replaced with real IPC calls in Task 17)
+  // Load job history from database
   useEffect(() => {
-    const mockHistory: JobHistoryItem[] = [
-      {
-        id: '1',
-        profileName: 'Amazon Electronics',
-        startedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        duration: 1847,
-        status: 'completed',
-        totalProducts: 150,
-        successCount: 148,
-        failCount: 2,
-      },
-      {
-        id: '2',
-        profileName: 'eBay Collectibles',
-        startedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        duration: 923,
-        status: 'completed',
-        totalProducts: 87,
-        successCount: 87,
-        failCount: 0,
-      },
-      {
-        id: '3',
-        profileName: 'Etsy Handmade',
-        startedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        duration: 456,
-        status: 'stopped',
-        totalProducts: 45,
-        successCount: 32,
-        failCount: 0,
-      },
-      {
-        id: '4',
-        profileName: 'Amazon Electronics',
-        startedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        duration: 234,
-        status: 'failed',
-        totalProducts: 25,
-        successCount: 15,
-        failCount: 10,
-      },
-      {
-        id: '5',
-        profileName: 'Walmart Home & Garden',
-        startedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
-        duration: 2145,
-        status: 'completed',
-        totalProducts: 200,
-        successCount: 195,
-        failCount: 5,
-      },
-    ];
-    setJobHistory(mockHistory);
+    const loadJobHistory = async () => {
+      try {
+        const jobs = await window.electronAPI.getAllJobs();
+        const profiles = await window.electronAPI.getAllProfiles();
+
+        // Create a map of profile IDs to names for quick lookup
+        const profileMap = new Map(profiles.map(p => [p.id, p.name]));
+
+        // Transform Job data to JobHistoryItem format
+        const history: JobHistoryItem[] = jobs
+          .filter(job => job.status !== 'running') // Exclude currently running jobs
+          .map(job => {
+            const duration = job.completedAt
+              ? Math.floor((job.completedAt - job.startedAt) / 1000)
+              : 0;
+
+            return {
+              id: job.id,
+              profileName: profileMap.get(job.profileId) || 'Unknown Profile',
+              startedAt: new Date(job.startedAt).toISOString(),
+              duration,
+              status: job.status as 'completed' | 'failed' | 'stopped',
+              totalProducts: job.totalProducts || 0,
+              successCount: job.successCount || 0,
+              failCount: job.failCount || 0,
+            };
+          });
+
+        setJobHistory(history);
+      } catch (error) {
+        console.error('Failed to load job history:', error);
+      }
+    };
+
+    loadJobHistory();
+
+    // Refresh job history every 30 seconds
+    const intervalId = setInterval(loadJobHistory, 30000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const formatDuration = (seconds: number): string => {

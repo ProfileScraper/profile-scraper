@@ -21,6 +21,9 @@ const IPC_CHANNELS = {
   PROFILE_DELETE: 'profile:delete',
   PROFILE_GET: 'profile:get',
   PROFILE_GET_ALL: 'profile:get-all',
+  JOB_GET_ALL: 'job:get-all',
+  JOB_GET: 'job:get',
+  JOB_GET_ERRORS: 'job:get-errors',
 };
 
 console.log('[Preload] Preload script starting...');
@@ -57,6 +60,11 @@ try {
   deleteProfile: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_DELETE, id),
   getProfile: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_GET, id),
   getAllProfiles: () => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_GET_ALL),
+
+  // Job operations
+  getAllJobs: (filter?: { profileId?: string; status?: string }) => ipcRenderer.invoke(IPC_CHANNELS.JOB_GET_ALL, filter),
+  getJob: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.JOB_GET, id),
+  getJobErrors: (jobId: string) => ipcRenderer.invoke(IPC_CHANNELS.JOB_GET_ERRORS, jobId),
 });
   console.log('[Preload] electronAPI exposed successfully');
 } catch (error) {
