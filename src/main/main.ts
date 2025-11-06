@@ -4,12 +4,16 @@ import { setupIpcHandlers } from './ipc/handlers';
 import { setupProfileHandlers } from './ipc/profileHandlers';
 import { setupJobHandlers } from './ipc/jobHandlers';
 import { initDatabase } from './database/db';
+import { migrateFromJSON } from './database/migration';
 
 let mainWindow: BrowserWindow | null = null;
 
-function createWindow(): void {
+async function createWindow(): Promise<void> {
   // Initialize database before creating window
   initDatabase();
+
+  // Run automatic migration from JSON to SQLite
+  await migrateFromJSON();
 
   const preloadPath = path.join(__dirname, 'preload.js');
   console.log('[Main] Creating window with preload path:', preloadPath);
