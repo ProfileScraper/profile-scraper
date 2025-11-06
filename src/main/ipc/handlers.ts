@@ -3,10 +3,14 @@ import { IPC_CHANNELS } from '../../shared/ipc-channels';
 import { ScrapeOrchestrator } from '../scraper/ScrapeOrchestrator';
 import { ScraperConfig, SiteProfile } from '../../shared/types';
 import { validateConfig } from '../../shared/config-schema';
+import { getDatabase } from '../database/db';
+import { ProfileRepository } from '../database/ProfileRepository';
+import { JobRepository } from '../database/JobRepository';
 import * as fs from 'fs';
 import * as path from 'path';
 
 let orchestrator: ScrapeOrchestrator | null = null;
+let currentJobId: string | null = null;
 
 export function setupIpcHandlers(mainWindow: Electron.BrowserWindow): void {
   // Load config
@@ -45,57 +49,127 @@ export function setupIpcHandlers(mainWindow: Electron.BrowserWindow): void {
   });
 
   // Start scraping
-  ipcMain.handle(IPC_CHANNELS.SCRAPE_START, async (event: IpcMainInvokeEvent, profileName: string) => {
-    console.log('[Main Process] SCRAPE_START handler called with profile:', profileName);
-    console.log('[Main Process] Current working directory:', process.cwd());
+  ipcMain.handle(IPC_CHANNELS.SCRAPE_START, async (event: IpcMainInvokeEvent, profileId: string) => {
+    console.log('[Main Process] SCRAPE_START handler called with profile ID:', profileId);
 
-    const configPath = path.join(process.cwd(), 'configs', 'scraper-config.json');
-    console.log('[Main Process] Looking for config at:', configPath);
+    try {
+      // Get database and repositories
+      const db = getDatabase();
+      const profileRepo = new ProfileRepository(db);
+      const jobRepo = new JobRepository(db);
 
-    const data = fs.readFileSync(configPath, 'utf-8');
-    const config: ScraperConfig = JSON.parse(data);
-    console.log('[Main Process] Config loaded successfully');
+      // Load profile from database
+      const profileData = profileRepo.getById(profileId);
+      if (!profileData) {
+        throw new Error(`Profile not found: ${profileId}`);
+      }
+      console.log('[Main Process] Profile loaded:', profileData.name);
 
-    const profile = config.profiles[profileName];
-    if (!profile) {
-      console.error('[Main Process] Profile not found:', profileName);
-      throw new Error(`Profile not found: ${profileName}`);
+      // Convert to SiteProfile format (remove id, createdAt, updatedAt)
+      const profile: SiteProfile = {
+        name: profileData.name,
+        categoryUrl: profileData.categoryUrl,
+        preActions: profileData.preActions,
+        pagination: profileData.pagination,
+        productLinkSelector: profileData.productLinkSelector,
+        productPageActions: profileData.productPageActions,
+        fieldSelectors: profileData.fieldSelectors,
+        concurrency: profileData.concurrency,
+        delayRange: profileData.delayRange,
+        retries: profileData.retries,
+        checkpointInterval: profileData.checkpointInterval,
+      };
+
+      // Setup output directories
+      const outputDir = path.join(process.cwd(), 'output', profileId);
+      const checkpointPath = path.join(outputDir, 'progress.json');
+
+      // Ensure output directory exists
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+
+      console.log('[Main Process] Output directory:', outputDir);
+
+      // Create job record
+      currentJobId = jobRepo.create({
+        profileId,
+        outputDir,
+        checkpointPath,
+      });
+      console.log('[Main Process] Job created:', currentJobId);
+
+      // Create orchestrator
+      orchestrator = new ScrapeOrchestrator(profile, outputDir, checkpointPath);
+      console.log('[Main Process] Orchestrator created');
+
+      // Forward events to renderer and update job in database
+      orchestrator.on('progress', (progress) => {
+        if (currentJobId) {
+          try {
+            jobRepo.updateProgress(currentJobId, {
+              productsScraped: progress.productsScraped,
+              successCount: progress.successCount,
+              failCount: progress.failCount,
+            });
+          } catch (error) {
+            console.error('[Main Process] Failed to update job progress:', error);
+          }
+        }
+        mainWindow.webContents.send(IPC_CHANNELS.SCRAPE_PROGRESS, progress);
+      });
+
+      orchestrator.on('product', (product) => {
+        mainWindow.webContents.send(IPC_CHANNELS.SCRAPE_PRODUCT, product);
+      });
+
+      orchestrator.on('error', (error) => {
+        // If this is a fatal error (not per-product error), mark job as failed
+        if (currentJobId && error && typeof error === 'object' && !('url' in error)) {
+          try {
+            jobRepo.fail(currentJobId, error instanceof Error ? error.message : String(error));
+          } catch (dbError) {
+            console.error('[Main Process] Failed to mark job as failed:', dbError);
+          }
+        }
+        mainWindow.webContents.send(IPC_CHANNELS.SCRAPE_ERROR, error);
+      });
+
+      orchestrator.on('complete', (stats) => {
+        if (currentJobId) {
+          try {
+            jobRepo.complete(currentJobId, {
+              productsScraped: stats.successCount + stats.failCount,
+              successCount: stats.successCount,
+              failCount: stats.failCount,
+            });
+          } catch (error) {
+            console.error('[Main Process] Failed to mark job as complete:', error);
+          }
+        }
+        mainWindow.webContents.send(IPC_CHANNELS.SCRAPE_COMPLETE, stats);
+      });
+
+      // Start scraping (non-blocking)
+      console.log('[Main Process] Starting orchestrator...');
+      orchestrator.start().catch(error => {
+        console.error('[Main Process] Orchestrator error:', error);
+        if (currentJobId) {
+          try {
+            jobRepo.fail(currentJobId, error instanceof Error ? error.message : String(error));
+          } catch (dbError) {
+            console.error('[Main Process] Failed to mark job as failed:', dbError);
+          }
+        }
+        mainWindow.webContents.send(IPC_CHANNELS.SCRAPE_ERROR, error);
+      });
+
+      console.log('[Main Process] Orchestrator started, returning success');
+      return { success: true, jobId: currentJobId };
+    } catch (error) {
+      console.error('[Main Process] Failed to start scraping:', error);
+      throw error;
     }
-    console.log('[Main Process] Profile found:', profile.name);
-
-    const outputDir = path.join(process.cwd(), 'output');
-    const checkpointPath = path.join(outputDir, 'progress.json');
-    console.log('[Main Process] Output directory:', outputDir);
-
-    orchestrator = new ScrapeOrchestrator(profile, outputDir, checkpointPath);
-    console.log('[Main Process] Orchestrator created');
-
-    // Forward events to renderer
-    orchestrator.on('progress', (progress) => {
-      mainWindow.webContents.send(IPC_CHANNELS.SCRAPE_PROGRESS, progress);
-    });
-
-    orchestrator.on('product', (product) => {
-      mainWindow.webContents.send(IPC_CHANNELS.SCRAPE_PRODUCT, product);
-    });
-
-    orchestrator.on('error', (error) => {
-      mainWindow.webContents.send(IPC_CHANNELS.SCRAPE_ERROR, error);
-    });
-
-    orchestrator.on('complete', (stats) => {
-      mainWindow.webContents.send(IPC_CHANNELS.SCRAPE_COMPLETE, stats);
-    });
-
-    // Start scraping (non-blocking)
-    console.log('[Main Process] Starting orchestrator...');
-    orchestrator.start().catch(error => {
-      console.error('[Main Process] Orchestrator error:', error);
-      mainWindow.webContents.send(IPC_CHANNELS.SCRAPE_ERROR, error);
-    });
-
-    console.log('[Main Process] Orchestrator started, returning success');
-    return { success: true };
   });
 
   // Pause scraping
@@ -118,7 +192,20 @@ export function setupIpcHandlers(mainWindow: Electron.BrowserWindow): void {
   ipcMain.handle(IPC_CHANNELS.SCRAPE_STOP, async () => {
     if (orchestrator) {
       await orchestrator.stop();
+
+      // Mark job as stopped
+      if (currentJobId) {
+        try {
+          const db = getDatabase();
+          const jobRepo = new JobRepository(db);
+          jobRepo.stop(currentJobId);
+        } catch (error) {
+          console.error('[Main Process] Failed to mark job as stopped:', error);
+        }
+      }
+
       orchestrator = null;
+      currentJobId = null;
     }
     return { success: true };
   });

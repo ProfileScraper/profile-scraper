@@ -40,9 +40,14 @@ export function ProfileLibrary() {
   };
 
   const handleRun = async (id: string) => {
-    // TODO: Implement run with profile ID
-    // For now, navigate to jobs page
-    navigate('/jobs');
+    try {
+      await window.electronAPI.startScrape(id);
+      // Navigate to jobs page to show progress
+      navigate('/jobs');
+    } catch (error) {
+      console.error('Failed to start scraping:', error);
+      // Could add error notification here
+    }
   };
 
   if (loading) {

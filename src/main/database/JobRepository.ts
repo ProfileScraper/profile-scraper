@@ -102,6 +102,41 @@ export class JobRepository {
     }
   }
 
+  fail(id: string, errorMessage: string): void {
+    const now = Date.now();
+
+    const stmt = this.db.prepare(`
+      UPDATE jobs SET
+        completed_at = ?,
+        status = ?,
+        error_message = ?
+      WHERE id = ?
+    `);
+
+    const result = stmt.run(now, 'failed', errorMessage, id);
+
+    if (result.changes === 0) {
+      throw new Error(`Job not found: ${id}`);
+    }
+  }
+
+  stop(id: string): void {
+    const now = Date.now();
+
+    const stmt = this.db.prepare(`
+      UPDATE jobs SET
+        completed_at = ?,
+        status = ?
+      WHERE id = ?
+    `);
+
+    const result = stmt.run(now, 'stopped', id);
+
+    if (result.changes === 0) {
+      throw new Error(`Job not found: ${id}`);
+    }
+  }
+
   getAll(): Job[] {
     const stmt = this.db.prepare('SELECT * FROM jobs ORDER BY started_at DESC');
     const rows = stmt.all() as JobRow[];

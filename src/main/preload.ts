@@ -35,7 +35,7 @@ try {
   saveConfig: (config: any) => ipcRenderer.invoke(IPC_CHANNELS.CONFIG_SAVE, config),
 
   // Scraping controls
-  startScrape: (profileName: string) => ipcRenderer.invoke(IPC_CHANNELS.SCRAPE_START, profileName),
+  startScrape: (profileId: string) => ipcRenderer.invoke(IPC_CHANNELS.SCRAPE_START, profileId),
   pauseScrape: () => ipcRenderer.invoke(IPC_CHANNELS.SCRAPE_PAUSE),
   resumeScrape: () => ipcRenderer.invoke(IPC_CHANNELS.SCRAPE_RESUME),
   stopScrape: () => ipcRenderer.invoke(IPC_CHANNELS.SCRAPE_STOP),
