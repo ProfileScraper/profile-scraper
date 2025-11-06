@@ -24,6 +24,7 @@ export function ProfileBuilder() {
     delayRange,
     retries,
     checkpointInterval,
+    headless,
     preActions,
     productPageActions,
     currentStep,
@@ -36,6 +37,7 @@ export function ProfileBuilder() {
     removeFieldSelector,
     setPagination,
     setOrchestratorSettings,
+    setHeadless,
     addPreAction,
     removePreAction,
     updatePreAction,
@@ -76,6 +78,7 @@ export function ProfileBuilder() {
   const [localDelayMax, setLocalDelayMax] = useState(delayRange[1]);
   const [localRetries, setLocalRetries] = useState(retries);
   const [localCheckpointInterval, setLocalCheckpointInterval] = useState(checkpointInterval);
+  const [localHeadless, setLocalHeadless] = useState(headless);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
   useEffect(() => {
@@ -102,7 +105,8 @@ export function ProfileBuilder() {
     setLocalDelayMax(delayRange[1]);
     setLocalRetries(retries);
     setLocalCheckpointInterval(checkpointInterval);
-  }, [name, categoryUrl, productLinkSelector, paginationSelector, paginationType, maxPages, concurrency, delayRange, retries, checkpointInterval]);
+    setLocalHeadless(headless);
+  }, [name, categoryUrl, productLinkSelector, paginationSelector, paginationType, maxPages, concurrency, delayRange, retries, checkpointInterval, headless]);
 
   const validateUrl = (url: string): boolean => {
     if (!url.trim()) {
@@ -354,6 +358,7 @@ export function ProfileBuilder() {
       delayRange: [localDelayMin, localDelayMax],
       retries: localRetries,
       checkpointInterval: localCheckpointInterval,
+      headless: localHeadless,
     });
 
     nextStep();
@@ -1107,6 +1112,29 @@ export function ProfileBuilder() {
             <h2 className="text-xl font-semibold mb-6 text-gray-800">Orchestrator Configuration</h2>
 
             <div className="space-y-6">
+              {/* Browser Mode */}
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <h3 className="text-lg font-medium text-gray-700 mb-4">Browser Mode</h3>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={localHeadless}
+                      onChange={(e) => setLocalHeadless(e.target.checked)}
+                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-gray-700">
+                        Headless Mode (Recommended)
+                      </span>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Run browser in background without UI for faster, more efficient scraping. Disable to see browser window for debugging.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               {/* Pagination Configuration */}
               <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                 <h3 className="text-lg font-medium text-gray-700 mb-4">Pagination Settings</h3>

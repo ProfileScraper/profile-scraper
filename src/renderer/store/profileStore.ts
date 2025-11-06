@@ -25,6 +25,7 @@ interface ProfileFormState {
   delayRange: [number, number];
   retries: number;
   checkpointInterval: number;
+  headless: boolean;
 
   // UI state
   currentStep: number;
@@ -50,7 +51,8 @@ interface ProfileStoreActions {
   updateProductPageAction: (index: number, action: Action) => void;
   reorderProductPageActions: (startIndex: number, endIndex: number) => void;
   setPagination: (type: 'button' | 'infinite' | 'url', selector: string, maxPages: number) => void;
-  setOrchestratorSettings: (settings: { concurrency?: number; delayRange?: [number, number]; retries?: number; checkpointInterval?: number }) => void;
+  setOrchestratorSettings: (settings: { concurrency?: number; delayRange?: [number, number]; retries?: number; checkpointInterval?: number; headless?: boolean }) => void;
+  setHeadless: (headless: boolean) => void;
 
   // Navigation
   setCurrentStep: (step: number) => void;
@@ -83,6 +85,7 @@ const initialState: ProfileFormState = {
   delayRange: [2000, 4000],
   retries: 3,
   checkpointInterval: 10,
+  headless: true, // Default to headless mode
   currentStep: 0,
   isInspectorActive: false,
   isSaving: false,
@@ -155,7 +158,10 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     delayRange: settings.delayRange ?? state.delayRange,
     retries: settings.retries ?? state.retries,
     checkpointInterval: settings.checkpointInterval ?? state.checkpointInterval,
+    headless: settings.headless ?? state.headless,
   })),
+
+  setHeadless: (headless) => set({ headless }),
 
   setCurrentStep: (step) => set({ currentStep: step }),
   nextStep: () => set((state) => ({ currentStep: state.currentStep + 1 })),
@@ -171,6 +177,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         name: profile.name,
         categoryUrl: profile.categoryUrl,
         productLinkSelector: profile.productLinkSelector || '',
+        prependDomain: profile.prependDomain || false,
         fieldSelectors: profile.fieldSelectors,
         preActions: profile.preActions,
         productPageActions: profile.productPageActions,
@@ -181,6 +188,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         delayRange: profile.delayRange,
         retries: profile.retries,
         checkpointInterval: profile.checkpointInterval,
+        headless: profile.headless !== false, // Default to true
       });
     }
   },
@@ -194,6 +202,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         name: state.name,
         categoryUrl: state.categoryUrl,
         productLinkSelector: state.productLinkSelector,
+        prependDomain: state.prependDomain,
         fieldSelectors: state.fieldSelectors,
         preActions: state.preActions,
         productPageActions: state.productPageActions,
@@ -206,6 +215,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         delayRange: state.delayRange,
         retries: state.retries,
         checkpointInterval: state.checkpointInterval,
+        headless: state.headless,
       };
 
       if (state.editingProfileId) {

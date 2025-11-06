@@ -16,7 +16,8 @@ export const SCHEMA = {
       delay_min INTEGER DEFAULT 2000,
       delay_max INTEGER DEFAULT 4000,
       retries INTEGER DEFAULT 3,
-      checkpoint_interval INTEGER DEFAULT 10
+      checkpoint_interval INTEGER DEFAULT 10,
+      headless INTEGER DEFAULT 1
     )
   `,
   JOBS: `

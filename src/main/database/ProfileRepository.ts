@@ -19,6 +19,7 @@ export interface ProfileRow {
   delay_max: number;
   retries: number;
   checkpoint_interval: number;
+  headless: number;
 }
 
 export class ProfileRepository {
@@ -33,8 +34,8 @@ export class ProfileRepository {
         id, name, created_at, updated_at, category_url,
         pre_actions, pagination, product_link_selector, prepend_domain,
         product_page_actions, field_selectors, concurrency,
-        delay_min, delay_max, retries, checkpoint_interval
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        delay_min, delay_max, retries, checkpoint_interval, headless
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -53,7 +54,8 @@ export class ProfileRepository {
       profile.delayRange[0],
       profile.delayRange[1],
       profile.retries,
-      profile.checkpointInterval
+      profile.checkpointInterval,
+      profile.headless !== false ? 1 : 0 // Default to headless (1) unless explicitly false
     );
 
     return id;
@@ -82,7 +84,7 @@ export class ProfileRepository {
         name = ?, updated_at = ?, category_url = ?,
         pre_actions = ?, pagination = ?, product_link_selector = ?, prepend_domain = ?,
         product_page_actions = ?, field_selectors = ?, concurrency = ?,
-        delay_min = ?, delay_max = ?, retries = ?, checkpoint_interval = ?
+        delay_min = ?, delay_max = ?, retries = ?, checkpoint_interval = ?, headless = ?
       WHERE id = ?
     `);
 
@@ -101,6 +103,7 @@ export class ProfileRepository {
       profile.delayRange[1],
       profile.retries,
       profile.checkpointInterval,
+      profile.headless !== false ? 1 : 0,
       id
     );
   }
@@ -127,7 +130,8 @@ export class ProfileRepository {
         concurrency: row.concurrency,
         delayRange: [row.delay_min, row.delay_max],
         retries: row.retries,
-        checkpointInterval: row.checkpoint_interval
+        checkpointInterval: row.checkpoint_interval,
+        headless: row.headless === 1
       };
     } catch (error) {
       throw new Error(`Failed to parse profile data for ID ${row.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);

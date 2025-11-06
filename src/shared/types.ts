@@ -20,6 +20,7 @@ export interface SiteProfile {
   delayRange: [number, number];
   retries: number;
   checkpointInterval: number;
+  headless?: boolean; // Default true - headless mode for faster scraping
 }
 
 export interface PaginationConfig {

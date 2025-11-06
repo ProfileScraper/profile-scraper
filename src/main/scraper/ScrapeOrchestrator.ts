@@ -42,33 +42,20 @@ export class ScrapeOrchestrator extends EventEmitter {
     logInfo('Starting scraper');
 
     try {
-      // Launch browser
-      this.browser = await chromium.launch({ headless: false });
-      logInfo('Browser launched');
+      // Launch browser (default to headless unless explicitly disabled in profile)
+      const headless = this.profile.headless !== false; // Default to true
+      this.browser = await chromium.launch({ headless });
+      logInfo(`Browser launched in ${headless ? 'headless' : 'headed'} mode`);
 
       // Check for existing checkpoint
       const checkpoint = this.checkpointManager.load();
-      let productUrls: string[];
 
       if (checkpoint && checkpoint.pending.length > 0) {
         logInfo(`Resuming from checkpoint: ${checkpoint.pending.length} products remaining`);
-        productUrls = checkpoint.pending;
+        this.productQueue = checkpoint.pending;
         this.successCount = checkpoint.successCount;
         this.failCount = checkpoint.failCount;
-      } else {
-        // Fresh start: crawl category pages
-        const crawlerContext = await this.browser.newContext();
-        const crawlerPage = await crawlerContext.newPage();
-        const crawler = new CategoryCrawler(crawlerPage, this.profile);
-
-        productUrls = await crawler.crawl();
-        await crawlerPage.close();
-        await crawlerContext.close();
-
-        logInfo(`Found ${productUrls.length} products to scrape`);
       }
-
-      this.productQueue = productUrls;
 
       // Create worker contexts
       for (let i = 0; i < this.profile.concurrency; i++) {
@@ -79,8 +66,40 @@ export class ScrapeOrchestrator extends EventEmitter {
         this.workers.push(worker);
       }
 
-      // Start processing
-      await this.processQueue();
+      if (checkpoint && checkpoint.pending.length > 0) {
+        // Resume from checkpoint - start processing immediately
+        await this.processQueue();
+      } else {
+        // Fresh start: crawl category pages while processing products in parallel
+        const crawlerContext = await this.browser.newContext();
+        const crawlerPage = await crawlerContext.newPage();
+        const crawler = new CategoryCrawler(crawlerPage, this.profile);
+
+        let crawlComplete = false;
+
+        // Listen for URL discovery and add to queue immediately
+        crawler.on('urls', (urls: string[]) => {
+          logInfo(`Discovered ${urls.length} new URLs, adding to queue`);
+          this.productQueue.push(...urls);
+          this.emitProgress();
+        });
+
+        crawler.on('complete', (totalFound: number) => {
+          logInfo(`Category crawl complete: ${totalFound} total products discovered`);
+          crawlComplete = true;
+        });
+
+        // Start crawling in parallel with processing
+        const crawlPromise = crawler.crawl().then(async () => {
+          await crawlerPage.close();
+          await crawlerContext.close();
+        });
+
+        const processPromise = this.processQueue();
+
+        // Wait for both crawling and processing to complete
+        await Promise.all([crawlPromise, processPromise]);
+      }
 
       this.emit('complete', {
         successCount: this.successCount,
