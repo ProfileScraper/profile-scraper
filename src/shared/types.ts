@@ -2,6 +2,11 @@ export interface ScraperConfig {
   profiles: Record<string, SiteProfile>;
 }
 
+export interface FieldSelector {
+  selector: string;
+  attribute?: string; // undefined = textContent, 'href', 'src', etc.
+}
+
 export interface SiteProfile {
   name: string;
   categoryUrl: string;
@@ -9,7 +14,7 @@ export interface SiteProfile {
   pagination: PaginationConfig;
   productLinkSelector?: string;
   productPageActions: Action[];
-  fieldSelectors: Record<string, string>;
+  fieldSelectors: Record<string, string | FieldSelector>;
   concurrency: number;
   delayRange: [number, number];
   retries: number;

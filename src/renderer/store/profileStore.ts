@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { SiteProfile, Action } from '../../shared/types';
+import { SiteProfile, Action, FieldSelector } from '../../shared/types';
 
 interface ProfileFormState {
   // Basic info
@@ -8,7 +8,7 @@ interface ProfileFormState {
 
   // Selectors
   productLinkSelector: string;
-  fieldSelectors: Record<string, string>;
+  fieldSelectors: Record<string, string | FieldSelector>;
 
   // Actions
   preActions: Action[];
@@ -37,7 +37,7 @@ interface ProfileStoreActions {
   setName: (name: string) => void;
   setCategoryUrl: (url: string) => void;
   setProductLinkSelector: (selector: string) => void;
-  addFieldSelector: (field: string, selector: string) => void;
+  addFieldSelector: (field: string, selector: string | FieldSelector) => void;
   removeFieldSelector: (field: string) => void;
   addPreAction: (action: Action) => void;
   removePreAction: (index: number) => void;

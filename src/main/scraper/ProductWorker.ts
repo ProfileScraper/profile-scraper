@@ -40,12 +40,27 @@ export class ProductWorker {
         await this.actionExecutor.executeSequence(this.page, this.profile.productPageActions);
 
         // Extract fields
-        for (const [fieldName, selector] of Object.entries(this.profile.fieldSelectors)) {
+        for (const [fieldName, selectorValue] of Object.entries(this.profile.fieldSelectors)) {
           try {
+            // Handle both string selector and FieldSelector object
+            const isObject = typeof selectorValue === 'object' && selectorValue !== null;
+            const selector = isObject ? selectorValue.selector : selectorValue;
+            const attribute = isObject ? selectorValue.attribute : undefined;
+
             const element = this.page.locator(selector);
-            const value = await element.textContent();
+
+            let value: string | null;
+            if (attribute) {
+              // Extract specified attribute
+              value = await element.getAttribute(attribute);
+            } else {
+              // Extract text content (default)
+              value = await element.textContent();
+            }
+
             product.fields[fieldName] = value?.trim() || null;
           } catch (error) {
+            const selector = typeof selectorValue === 'object' ? selectorValue.selector : selectorValue;
             logWarning(`Field ${fieldName} not found for ${url}`, { selector });
             product.fields[fieldName] = null;
           }

@@ -59,6 +59,7 @@ export function ProfileBuilder() {
   const [localPaginationSelector, setLocalPaginationSelector] = useState(paginationSelector);
   const [newFieldName, setNewFieldName] = useState('');
   const [newFieldSelector, setNewFieldSelector] = useState('');
+  const [newFieldAttribute, setNewFieldAttribute] = useState<string>('');
 
   // Step 3: Workflow configuration
   const [editingAction, setEditingAction] = useState<{ type: 'pre' | 'product', index: number } | null>(null);
@@ -145,6 +146,32 @@ export function ProfileBuilder() {
     navigate('/profiles');
   };
 
+  // Helper function to suggest attribute based on selector
+  const suggestAttribute = (selector: string): string => {
+    const lowerSelector = selector.toLowerCase();
+
+    // Check if selector targets 'a' elements -> suggest 'href'
+    if (lowerSelector === 'a' || lowerSelector.startsWith('a.') || lowerSelector.startsWith('a#') ||
+        lowerSelector.startsWith('a[') || lowerSelector.includes(' a') || lowerSelector.endsWith(' a')) {
+      return 'href';
+    }
+
+    // Check for img elements -> suggest 'src'
+    if (lowerSelector === 'img' || lowerSelector.startsWith('img.') || lowerSelector.startsWith('img#') ||
+        lowerSelector.startsWith('img[') || lowerSelector.includes(' img') || lowerSelector.endsWith(' img')) {
+      return 'src';
+    }
+
+    // Check for input elements -> suggest 'value'
+    if (lowerSelector === 'input' || lowerSelector.startsWith('input.') || lowerSelector.startsWith('input#') ||
+        lowerSelector.startsWith('input[') || lowerSelector.includes(' input') || lowerSelector.endsWith(' input')) {
+      return 'value';
+    }
+
+    // Default to text content (empty string means textContent)
+    return '';
+  };
+
   // Step 2 handlers
   const handleAddField = () => {
     if (!newFieldName.trim() || !newFieldSelector.trim()) {
@@ -157,9 +184,13 @@ export function ProfileBuilder() {
       return;
     }
 
-    addFieldSelector(newFieldName.trim(), newFieldSelector.trim());
+    const attribute = newFieldAttribute || undefined;
+    const fieldValue = attribute ? { selector: newFieldSelector.trim(), attribute } : newFieldSelector.trim();
+
+    addFieldSelector(newFieldName.trim(), fieldValue);
     setNewFieldName('');
     setNewFieldSelector('');
+    setNewFieldAttribute('');
   };
 
   const handleRemoveField = (fieldName: string) => {
@@ -516,30 +547,40 @@ export function ProfileBuilder() {
                 {/* Existing field selectors */}
                 {Object.keys(fieldSelectors).length > 0 && (
                   <div className="space-y-2 mb-4">
-                    {Object.entries(fieldSelectors).map(([fieldName, selector]) => (
-                      <div
-                        key={fieldName}
-                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
-                      >
-                        <div className="flex-1 grid grid-cols-2 gap-3">
-                          <div>
-                            <span className="text-xs text-gray-500">Field Name:</span>
-                            <p className="font-medium text-gray-800">{fieldName}</p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">Selector:</span>
-                            <p className="font-mono text-sm text-gray-800 truncate">{selector}</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleRemoveField(fieldName)}
-                          className="px-3 py-1 text-red-600 hover:bg-red-50 rounded transition-colors text-sm"
-                          title="Remove field"
+                    {Object.entries(fieldSelectors).map(([fieldName, selectorValue]) => {
+                      const isObject = typeof selectorValue === 'object';
+                      const selector = isObject ? selectorValue.selector : selectorValue;
+                      const attribute = isObject ? selectorValue.attribute : undefined;
+
+                      return (
+                        <div
+                          key={fieldName}
+                          className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
                         >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
+                          <div className="flex-1 grid grid-cols-3 gap-3">
+                            <div>
+                              <span className="text-xs text-gray-500">Field Name:</span>
+                              <p className="font-medium text-gray-800">{fieldName}</p>
+                            </div>
+                            <div>
+                              <span className="text-xs text-gray-500">Selector:</span>
+                              <p className="font-mono text-sm text-gray-800 truncate">{selector}</p>
+                            </div>
+                            <div>
+                              <span className="text-xs text-gray-500">Extract:</span>
+                              <p className="text-sm text-gray-800">{attribute || 'text content'}</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveField(fieldName)}
+                            className="px-3 py-1 text-red-600 hover:bg-red-50 rounded transition-colors text-sm"
+                            title="Remove field"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -557,10 +598,40 @@ export function ProfileBuilder() {
                     <input
                       type="text"
                       value={newFieldSelector}
-                      onChange={(e) => setNewFieldSelector(e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setNewFieldSelector(value);
+                        // Auto-suggest attribute based on selector
+                        if (value.trim()) {
+                          const suggested = suggestAttribute(value);
+                          setNewFieldAttribute(suggested);
+                        }
+                      }}
                       placeholder="CSS selector (e.g., .product-title, span.price)"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
                     />
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Extract from element:
+                      </label>
+                      <select
+                        value={newFieldAttribute}
+                        onChange={(e) => setNewFieldAttribute(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      >
+                        <option value="">Text content (default)</option>
+                        <option value="href">href (for links)</option>
+                        <option value="src">src (for images)</option>
+                        <option value="value">value (for inputs)</option>
+                        <option value="alt">alt (for images)</option>
+                        <option value="title">title attribute</option>
+                        <option value="data-price">data-price</option>
+                        <option value="data-id">data-id</option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Auto-suggested based on your selector. Change if needed.
+                      </p>
+                    </div>
                     <button
                       onClick={handleAddField}
                       className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium text-sm"
