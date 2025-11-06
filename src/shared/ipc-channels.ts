@@ -27,4 +27,6 @@ export const IPC_CHANNELS = {
   JOB_GET_ALL: 'job:get-all',
   JOB_GET: 'job:get',
   JOB_GET_ERRORS: 'job:get-errors',
+  JOB_GET_DATA: 'job:get-data',
+  JOB_EXPORT_DATA: 'job:export-data',
 } as const;

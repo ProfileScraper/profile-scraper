@@ -24,6 +24,8 @@ const IPC_CHANNELS = {
   JOB_GET_ALL: 'job:get-all',
   JOB_GET: 'job:get',
   JOB_GET_ERRORS: 'job:get-errors',
+  JOB_GET_DATA: 'job:get-data',
+  JOB_EXPORT_DATA: 'job:export-data',
 };
 
 console.log('[Preload] Preload script starting...');
@@ -65,6 +67,8 @@ try {
   getAllJobs: (filter?: { profileId?: string; status?: string }) => ipcRenderer.invoke(IPC_CHANNELS.JOB_GET_ALL, filter),
   getJob: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.JOB_GET, id),
   getJobErrors: (jobId: string) => ipcRenderer.invoke(IPC_CHANNELS.JOB_GET_ERRORS, jobId),
+  getJobData: (jobId: string) => ipcRenderer.invoke(IPC_CHANNELS.JOB_GET_DATA, jobId),
+  exportJobData: (jobId: string, format: 'json' | 'csv' | 'both') => ipcRenderer.invoke(IPC_CHANNELS.JOB_EXPORT_DATA, jobId, format),
 });
   console.log('[Preload] electronAPI exposed successfully');
 } catch (error) {

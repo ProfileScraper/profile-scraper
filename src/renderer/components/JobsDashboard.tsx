@@ -164,9 +164,22 @@ export function JobsDashboard() {
     currentPage * itemsPerPage
   );
 
-  const handleExport = (jobId: string) => {
-    console.log('Export job:', jobId);
-    // TODO: Implement export functionality
+  const handleExport = async (jobId: string, format: 'json' | 'csv' | 'both') => {
+    try {
+      const result = await window.electronAPI.exportJobData(jobId, format);
+      if (result.success) {
+        alert(`Data exported successfully to: ${result.path}`);
+      } else {
+        alert(result.message || 'Export canceled');
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert(`Export failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  const handleViewData = (jobId: string) => {
+    navigate(`/jobs/${jobId}/data`);
   };
 
   const handleJobClick = (jobId: string) => {
@@ -445,15 +458,32 @@ export function JobsDashboard() {
                           </div>
                         </td>
                         <td className="px-4 py-4">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleExport(job.id);
-                            }}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                          >
-                            Export
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewData(job.id);
+                              }}
+                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                            >
+                              View Data
+                            </button>
+                            <span className="text-gray-300">|</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const format = window.confirm('Export as CSV? (Cancel for JSON, OK for both)')
+                                  ? 'both'
+                                  : window.confirm('Export as JSON?')
+                                  ? 'json'
+                                  : 'csv';
+                                handleExport(job.id, format);
+                              }}
+                              className="text-green-600 hover:text-green-800 text-sm font-medium"
+                            >
+                              Export
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

@@ -1,4 +1,4 @@
-import { SiteProfile } from '../../shared/types';
+import { SiteProfile, ProductData } from '../../shared/types';
 
 export interface Job {
   id: string;
@@ -47,6 +47,8 @@ export interface ElectronAPI {
   getAllJobs: (filter?: { profileId?: string; status?: string }) => Promise<Job[]>;
   getJob: (id: string) => Promise<Job | null>;
   getJobErrors: (jobId: string) => Promise<JobError[]>;
+  getJobData: (jobId: string) => Promise<ProductData[]>;
+  exportJobData: (jobId: string, format: 'json' | 'csv' | 'both') => Promise<{ success: boolean; path?: string; message?: string }>;
 }
 
 declare global {
