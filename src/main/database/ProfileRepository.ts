@@ -11,6 +11,7 @@ export interface ProfileRow {
   pre_actions: string;
   pagination: string;
   product_link_selector: string | null;
+  prepend_domain: number;
   product_page_actions: string;
   field_selectors: string;
   concurrency: number;
@@ -30,10 +31,10 @@ export class ProfileRepository {
     const stmt = this.db.prepare(`
       INSERT INTO profiles (
         id, name, created_at, updated_at, category_url,
-        pre_actions, pagination, product_link_selector,
+        pre_actions, pagination, product_link_selector, prepend_domain,
         product_page_actions, field_selectors, concurrency,
         delay_min, delay_max, retries, checkpoint_interval
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -45,6 +46,7 @@ export class ProfileRepository {
       JSON.stringify(profile.preActions),
       JSON.stringify(profile.pagination),
       profile.productLinkSelector || null,
+      profile.prependDomain ? 1 : 0,
       JSON.stringify(profile.productPageActions),
       JSON.stringify(profile.fieldSelectors),
       profile.concurrency,
@@ -78,7 +80,7 @@ export class ProfileRepository {
     const stmt = this.db.prepare(`
       UPDATE profiles SET
         name = ?, updated_at = ?, category_url = ?,
-        pre_actions = ?, pagination = ?, product_link_selector = ?,
+        pre_actions = ?, pagination = ?, product_link_selector = ?, prepend_domain = ?,
         product_page_actions = ?, field_selectors = ?, concurrency = ?,
         delay_min = ?, delay_max = ?, retries = ?, checkpoint_interval = ?
       WHERE id = ?
@@ -91,6 +93,7 @@ export class ProfileRepository {
       JSON.stringify(profile.preActions),
       JSON.stringify(profile.pagination),
       profile.productLinkSelector || null,
+      profile.prependDomain ? 1 : 0,
       JSON.stringify(profile.productPageActions),
       JSON.stringify(profile.fieldSelectors),
       profile.concurrency,
@@ -118,6 +121,7 @@ export class ProfileRepository {
         preActions: JSON.parse(row.pre_actions),
         pagination: JSON.parse(row.pagination),
         productLinkSelector: row.product_link_selector || undefined,
+        prependDomain: row.prepend_domain === 1,
         productPageActions: JSON.parse(row.product_page_actions),
         fieldSelectors: JSON.parse(row.field_selectors),
         concurrency: row.concurrency,

@@ -4,7 +4,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautif
 import { useProfileStore } from '../store/profileStore';
 import { Action } from '../../shared/types';
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 export function ProfileBuilder() {
   const { id } = useParams<{ id?: string }>();
@@ -405,10 +405,11 @@ export function ProfileBuilder() {
                   </div>
                   <span className="text-xs mt-2 text-gray-600">
                     {i === 0 && 'Basic Info'}
-                    {i === 1 && 'Selectors'}
-                    {i === 2 && 'Workflow'}
-                    {i === 3 && 'Settings'}
-                    {i === 4 && 'Review'}
+                    {i === 1 && 'Gather Links'}
+                    {i === 2 && 'Product Config'}
+                    {i === 3 && 'Workflow'}
+                    {i === 4 && 'Settings'}
+                    {i === 5 && 'Review'}
                   </span>
                 </div>
                 {i < TOTAL_STEPS - 1 && (
@@ -507,22 +508,16 @@ export function ProfileBuilder() {
         )}
 
         {/* Step 2: Configure Selectors */}
+        {/* Step 1: Gather Links */}
         {currentStep === 1 && (
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-6 text-gray-800">Configure Selectors</h2>
+            <h2 className="text-xl font-semibold mb-6 text-gray-800">Gather Product Links</h2>
+            <p className="text-gray-600 mb-6">
+              Configure how to find and collect product links from your category/listing pages.
+              This step determines which products will be scraped.
+            </p>
 
             <div className="space-y-6">
-              {/* Inspector Mode Notice */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-medium text-blue-900 mb-2">Manual Selector Entry</h3>
-                <p className="text-sm text-blue-800 mb-2">
-                  Enter CSS selectors manually for each field. Use browser DevTools to inspect elements and copy their selectors.
-                </p>
-                <p className="text-xs text-blue-600 italic">
-                  Advanced: Inspector mode coming soon - manually enter CSS selectors for now
-                </p>
-              </div>
-
               {/* Product Link Selector */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -553,6 +548,69 @@ export function ProfileBuilder() {
                 </label>
                 <p className="text-xs text-gray-500 mt-1 ml-6">
                   Enable this if product links are relative (e.g., "/product/123" instead of "https://example.com/product/123")
+                </p>
+              </div>
+
+              {/* Pagination Selector */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Pagination Selector <span className="text-gray-400">(Optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={localPaginationSelector}
+                  onChange={(e) => setLocalPaginationSelector(e.target.value)}
+                  placeholder="e.g., button.next-page, a.pagination-next"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  CSS selector for the "Next Page" button or link (leave empty if not applicable)
+                </p>
+              </div>
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+              <button
+                onClick={previousStep}
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+              >
+                Back
+              </button>
+              <button
+                onClick={() => {
+                  if (!localProductLinkSelector.trim()) {
+                    alert('Product link selector is required');
+                    return;
+                  }
+                  setProductLinkSelector(localProductLinkSelector);
+                  nextStep();
+                }}
+                className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+              >
+                Next: Product Config
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Product Page Config */}
+        {currentStep === 2 && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-6 text-gray-800">Product Page Configuration</h2>
+            <p className="text-gray-600 mb-6">
+              Configure which fields to extract from each product page. Define selectors for product details like title, price, description, etc.
+            </p>
+
+            <div className="space-y-6">
+              {/* Inspector Mode Notice */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-medium text-blue-900 mb-2">Manual Selector Entry</h3>
+                <p className="text-sm text-blue-800 mb-2">
+                  Enter CSS selectors manually for each field. Use browser DevTools to inspect elements and copy their selectors.
+                </p>
+                <p className="text-xs text-blue-600 italic">
+                  Advanced: Inspector mode coming soon - manually enter CSS selectors for now
                 </p>
               </div>
 
@@ -663,23 +721,6 @@ export function ProfileBuilder() {
                   Add mappings from field names to CSS selectors for data extraction
                 </p>
               </div>
-
-              {/* Pagination Selector */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Pagination Selector <span className="text-gray-400">(Optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={localPaginationSelector}
-                  onChange={(e) => setLocalPaginationSelector(e.target.value)}
-                  placeholder="e.g., button.next-page, a.pagination-next"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  CSS selector for the "Next Page" button or link (leave empty if not applicable)
-                </p>
-              </div>
             </div>
 
             {/* Navigation Buttons */}
@@ -691,17 +732,23 @@ export function ProfileBuilder() {
                 Back
               </button>
               <button
-                onClick={handleStep2Next}
+                onClick={() => {
+                  if (Object.keys(fieldSelectors).length === 0) {
+                    alert('At least one field selector is required');
+                    return;
+                  }
+                  nextStep();
+                }}
                 className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
               >
-                Next: Configure Workflow
+                Next: Workflow
               </button>
             </div>
           </div>
         )}
 
         {/* Step 3: Configure Workflow */}
-        {currentStep === 2 && (
+        {currentStep === 3 && (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-6 text-gray-800">Configure Workflow</h2>
 
@@ -748,7 +795,7 @@ export function ProfileBuilder() {
 
               {/* Action List */}
               <DragDropContext onDragEnd={(result) => handleDragEnd(result, 'pre')}>
-                <Droppable droppableId="pre-actions">
+                <Droppable droppableId="pre-actions" isDropDisabled={false}>
                   {(provided) => (
                     <div
                       {...provided.droppableProps}
@@ -846,7 +893,7 @@ export function ProfileBuilder() {
 
               {/* Action List */}
               <DragDropContext onDragEnd={(result) => handleDragEnd(result, 'product')}>
-                <Droppable droppableId="product-actions">
+                <Droppable droppableId="product-actions" isDropDisabled={false}>
                   {(provided) => (
                     <div
                       {...provided.droppableProps}
@@ -1054,7 +1101,7 @@ export function ProfileBuilder() {
         )}
 
         {/* Step 4: Orchestrator Config */}
-        {currentStep === 3 && (
+        {currentStep === 4 && (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-6 text-gray-800">Orchestrator Configuration</h2>
 
@@ -1272,7 +1319,7 @@ export function ProfileBuilder() {
         )}
 
         {/* Step 5: Review & Save */}
-        {currentStep === 4 && (
+        {currentStep === 5 && (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-6 text-gray-800">Review & Save Profile</h2>
 
