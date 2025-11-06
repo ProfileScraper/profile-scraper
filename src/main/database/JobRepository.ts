@@ -75,7 +75,11 @@ export class JobRepository {
       WHERE id = ?
     `);
 
-    stmt.run(progress.productsScraped, progress.successCount, progress.failCount, id);
+    const result = stmt.run(progress.productsScraped, progress.successCount, progress.failCount, id);
+
+    if (result.changes === 0) {
+      throw new Error(`Job not found: ${id}`);
+    }
   }
 
   complete(id: string, finalStats: { productsScraped: number; successCount: number; failCount: number }): void {
@@ -91,7 +95,11 @@ export class JobRepository {
       WHERE id = ?
     `);
 
-    stmt.run(now, 'completed', finalStats.productsScraped, finalStats.successCount, finalStats.failCount, id);
+    const result = stmt.run(now, 'completed', finalStats.productsScraped, finalStats.successCount, finalStats.failCount, id);
+
+    if (result.changes === 0) {
+      throw new Error(`Job not found: ${id}`);
+    }
   }
 
   getAll(): Job[] {
@@ -107,6 +115,12 @@ export class JobRepository {
   }
 
   private rowToJob(row: JobRow): Job {
+    const validStatuses: Job['status'][] = ['running', 'completed', 'stopped', 'failed'];
+
+    if (!validStatuses.includes(row.status as Job['status'])) {
+      throw new Error(`Invalid job status: ${row.status}`);
+    }
+
     return {
       id: row.id,
       profileId: row.profile_id,
