@@ -60,9 +60,12 @@ export class CategoryCrawler {
     for (const element of elements) {
       const href = await element.getAttribute('href');
       if (href) {
-        // Make absolute URL if relative
-        const absoluteUrl = new URL(href, this.profile.categoryUrl).toString();
-        urls.push(absoluteUrl);
+        // Make absolute URL if prependDomain is enabled or if href is relative
+        let url = href;
+        if (this.profile.prependDomain || !href.startsWith('http')) {
+          url = new URL(href, this.profile.categoryUrl).toString();
+        }
+        urls.push(url);
       }
     }
 

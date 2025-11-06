@@ -15,6 +15,7 @@ export function ProfileBuilder() {
     name,
     categoryUrl,
     productLinkSelector,
+    prependDomain,
     fieldSelectors,
     paginationSelector,
     paginationType,
@@ -30,6 +31,7 @@ export function ProfileBuilder() {
     setName,
     setCategoryUrl,
     setProductLinkSelector,
+    setPrependDomain,
     addFieldSelector,
     removeFieldSelector,
     setPagination,
@@ -535,6 +537,22 @@ export function ProfileBuilder() {
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   CSS selector for the links to individual product pages
+                </p>
+
+                {/* Prepend Domain Checkbox */}
+                <label className="flex items-center gap-2 mt-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={prependDomain}
+                    onChange={(e) => setPrependDomain(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Prepend domain to relative URLs
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1 ml-6">
+                  Enable this if product links are relative (e.g., "/product/123" instead of "https://example.com/product/123")
                 </p>
               </div>
 
@@ -1292,12 +1310,20 @@ export function ProfileBuilder() {
                   <div>
                     <span className="text-gray-600">Field Selectors ({Object.keys(fieldSelectors).length}):</span>
                     <div className="mt-2 space-y-1">
-                      {Object.entries(fieldSelectors).map(([field, selector]) => (
-                        <div key={field} className="flex items-start gap-2 text-xs">
-                          <span className="font-medium text-gray-700 min-w-[80px]">{field}:</span>
-                          <span className="font-mono text-gray-600 break-all">{selector}</span>
-                        </div>
-                      ))}
+                      {Object.entries(fieldSelectors).map(([field, selectorValue]) => {
+                        const isObject = typeof selectorValue === 'object';
+                        const selector = isObject ? selectorValue.selector : selectorValue;
+                        const attribute = isObject ? selectorValue.attribute : undefined;
+                        return (
+                          <div key={field} className="flex items-start gap-2 text-xs">
+                            <span className="font-medium text-gray-700 min-w-[80px]">{field}:</span>
+                            <span className="font-mono text-gray-600 break-all">
+                              {selector}
+                              {attribute && <span className="text-blue-600 ml-1">→ {attribute}</span>}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

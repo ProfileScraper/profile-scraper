@@ -8,6 +8,7 @@ interface ProfileFormState {
 
   // Selectors
   productLinkSelector: string;
+  prependDomain: boolean;
   fieldSelectors: Record<string, string | FieldSelector>;
 
   // Actions
@@ -37,6 +38,7 @@ interface ProfileStoreActions {
   setName: (name: string) => void;
   setCategoryUrl: (url: string) => void;
   setProductLinkSelector: (selector: string) => void;
+  setPrependDomain: (prepend: boolean) => void;
   addFieldSelector: (field: string, selector: string | FieldSelector) => void;
   removeFieldSelector: (field: string) => void;
   addPreAction: (action: Action) => void;
@@ -70,6 +72,7 @@ const initialState: ProfileFormState = {
   name: '',
   categoryUrl: '',
   productLinkSelector: '',
+  prependDomain: false,
   fieldSelectors: {},
   preActions: [],
   productPageActions: [],
@@ -92,6 +95,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   setName: (name) => set({ name }),
   setCategoryUrl: (url) => set({ categoryUrl: url }),
   setProductLinkSelector: (selector) => set({ productLinkSelector: selector }),
+  setPrependDomain: (prepend) => set({ prependDomain: prepend }),
 
   addFieldSelector: (field, selector) => set((state) => ({
     fieldSelectors: { ...state.fieldSelectors, [field]: selector }

@@ -13,6 +13,7 @@ export interface SiteProfile {
   preActions: Action[];
   pagination: PaginationConfig;
   productLinkSelector?: string;
+  prependDomain?: boolean;
   productPageActions: Action[];
   fieldSelectors: Record<string, string | FieldSelector>;
   concurrency: number;

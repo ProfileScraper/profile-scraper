@@ -9,6 +9,7 @@ export const SCHEMA = {
       pre_actions TEXT,
       pagination TEXT NOT NULL,
       product_link_selector TEXT,
+      prepend_domain INTEGER DEFAULT 0,
       product_page_actions TEXT,
       field_selectors TEXT,
       concurrency INTEGER DEFAULT 3,
