@@ -1,14 +1,14 @@
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import { JobRepository } from '../../src/main/database/JobRepository';
 import { SCHEMA } from '../../src/main/database/schema';
 
 describe('JobRepository', () => {
-  let db: Database.Database;
+  let db: DatabaseSync;
   let repo: JobRepository;
   let testProfileId: string;
 
   beforeEach(() => {
-    db = new Database(':memory:');
+    db = new DatabaseSync(':memory:');
     db.exec(SCHEMA.PROFILES);
     db.exec(SCHEMA.JOBS);
     db.exec(SCHEMA.JOB_ERRORS);

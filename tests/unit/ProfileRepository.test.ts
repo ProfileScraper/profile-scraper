@@ -1,14 +1,14 @@
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import { ProfileRepository } from '../../src/main/database/ProfileRepository';
 import { SiteProfile } from '../../src/shared/types';
 import { SCHEMA } from '../../src/main/database/schema';
 
 describe('ProfileRepository', () => {
-  let db: Database.Database;
+  let db: DatabaseSync;
   let repo: ProfileRepository;
 
   beforeEach(() => {
-    db = new Database(':memory:');
+    db = new DatabaseSync(':memory:');
     db.exec(SCHEMA.PROFILES);
     repo = new ProfileRepository(db);
   });

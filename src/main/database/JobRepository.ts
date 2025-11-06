@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'crypto';
 
 export interface JobRow {
@@ -32,7 +32,7 @@ export interface Job {
 }
 
 export class JobRepository {
-  constructor(private db: Database.Database) {}
+  constructor(private db: DatabaseSync) {}
 
   create(data: { profileId: string; totalProducts?: number; outputDir?: string; checkpointPath?: string }): string {
     const id = randomUUID();
@@ -139,13 +139,13 @@ export class JobRepository {
 
   getAll(): Job[] {
     const stmt = this.db.prepare('SELECT * FROM jobs ORDER BY started_at DESC');
-    const rows = stmt.all() as JobRow[];
+    const rows = stmt.all() as unknown as JobRow[];
     return rows.map(row => this.rowToJob(row));
   }
 
   getByProfileId(profileId: string): Job[] {
     const stmt = this.db.prepare('SELECT * FROM jobs WHERE profile_id = ? ORDER BY started_at DESC');
-    const rows = stmt.all(profileId) as JobRow[];
+    const rows = stmt.all(profileId) as unknown as JobRow[];
     return rows.map(row => this.rowToJob(row));
   }
 

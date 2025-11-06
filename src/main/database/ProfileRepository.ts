@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'crypto';
 import { SiteProfile } from '../../shared/types';
 
@@ -21,7 +21,7 @@ export interface ProfileRow {
 }
 
 export class ProfileRepository {
-  constructor(private db: Database.Database) {}
+  constructor(private db: DatabaseSync) {}
 
   create(profile: SiteProfile): string {
     const id = randomUUID();
@@ -68,7 +68,7 @@ export class ProfileRepository {
 
   getAll(): Array<SiteProfile & { id: string; createdAt: number; updatedAt: number }> {
     const stmt = this.db.prepare('SELECT * FROM profiles ORDER BY created_at DESC');
-    const rows = stmt.all() as ProfileRow[];
+    const rows = stmt.all() as unknown as ProfileRow[];
     return rows.map(row => this.rowToProfile(row));
   }
 

@@ -1,11 +1,11 @@
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import * as path from 'path';
 import * as fs from 'fs';
 import { SCHEMA } from './schema';
 
-let db: Database.Database | null = null;
+let db: DatabaseSync | null = null;
 
-export function initDatabase(dataPath?: string): Database.Database {
+export function initDatabase(dataPath?: string): DatabaseSync {
   if (db) return db;
 
   const dbPath = dataPath || path.join(process.cwd(), 'data', 'scraper.db');
@@ -16,10 +16,10 @@ export function initDatabase(dataPath?: string): Database.Database {
     fs.mkdirSync(dbDir, { recursive: true });
   }
 
-  db = new Database(dbPath);
+  db = new DatabaseSync(dbPath);
 
   // Enable foreign keys
-  db.pragma('foreign_keys = ON');
+  db.exec('PRAGMA foreign_keys = ON');
 
   // Create tables
   db.exec(SCHEMA.PROFILES);
@@ -31,7 +31,7 @@ export function initDatabase(dataPath?: string): Database.Database {
   return db;
 }
 
-export function getDatabase(): Database.Database {
+export function getDatabase(): DatabaseSync {
   if (!db) {
     throw new Error('Database not initialized. Call initDatabase() first.');
   }
