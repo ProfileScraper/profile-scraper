@@ -584,6 +584,7 @@ export function ProfileBuilder() {
                     return;
                   }
                   setProductLinkSelector(localProductLinkSelector);
+                  setPagination(localPaginationType, localPaginationSelector, localMaxPages);
                   nextStep();
                 }}
                 className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
@@ -1145,7 +1146,7 @@ export function ProfileBuilder() {
                         className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 font-mono text-sm"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Configured in Step 2: {paginationSelector || 'Not set'}
+                        Configured in Step 1 (Gather Links): {paginationSelector || 'Not set'}
                       </p>
                     </div>
                   )}
