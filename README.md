@@ -1,18 +1,34 @@
-# Configurable Web Scraper
+<p align="center">
+  <img src="assets/icon.png" alt="ProfileScraper Logo" width="128" height="128">
+</p>
 
-Desktop application for scraping product specifications from e-commerce websites with anti-detection browser automation.
+# ProfileScraper
+
+A powerful desktop application for scraping product data from e-commerce websites with advanced anti-detection capabilities and profile-based configuration.
 
 ## Features
 
-- Concurrent scraping with configurable workers
-- CSS selector-based field extraction
-- Resumable scraping with checkpoints
-- Real-time progress dashboard
-- Export to CSV and JSON
-- Anti-bot detection using patchright
-- Profile-based configuration
+- **Profile Management** - Create, edit, and organize scraping profiles with a visual UI
+- **Live Job Monitoring** - Real-time progress tracking with granular phase updates (initializing, gathering URLs, crawling products, finalizing)
+- **Product-Level Logging** - Detailed logs for each scraped product with diagnostic information
+- **Concurrent Scraping** - Configurable worker threads for parallel product scraping
+- **Smart Field Extraction** - CSS/XPath selector-based field extraction with attribute support
+- **Advanced Pagination** - Support for button-based, infinite scroll, and URL-based pagination
+- **Bot Evasion** - Comprehensive anti-detection using patchright with fingerprint randomization
+- **Checkpoint System** - Resumable scraping with automatic progress saving
+- **Data Export** - Export job data to CSV, JSON, or both formats
+- **Job History** - View all past scraping jobs with success/failure counts
+- **Database Storage** - SQLite-based storage for profiles, jobs, and scraped data
 
 ## Installation
+
+### For Users (macOS)
+
+Download the latest `ProfileScraper-1.0.0-arm64.dmg` from the releases and install.
+
+**Note**: The app is not code-signed, so you'll need to right-click and select "Open" the first time to bypass Gatekeeper.
+
+### For Developers
 
 ```bash
 npm install
@@ -20,53 +36,121 @@ npm install
 
 ## Development
 
+Start the development server:
+
 ```bash
 npm run dev
 ```
 
-## Build
+Build for production:
 
 ```bash
 npm run build
-npm run package
-```
-
-## Configuration
-
-Edit `configs/scraper-config.json` to add site profiles:
-
-```json
-{
-  "profiles": {
-    "your-site": {
-      "categoryUrl": "https://example.com/category",
-      "productLinkSelector": ".product a",
-      "fieldSelectors": {
-        "Field Name": ".css-selector"
-      }
-    }
-  }
-}
+npm run package  # Creates DMG in release/
 ```
 
 ## Usage
 
-1. Start the application
-2. Select a profile from the dropdown
-3. Click "Start" to begin scraping
-4. Monitor progress in real-time
-5. Find results in `output/data.csv` and `output/data.json`
+### 1. Create a Profile
+
+Navigate to the **Profiles** tab and click **Create New Profile**:
+
+- **Profile Name** - A descriptive name for your scraping target
+- **Category URL** - The listing page to start crawling from
+- **Product Link Selector** - CSS selector to find product links on the category page
+- **Field Selectors** - Map field names to CSS selectors for data extraction
+  - Supports text content extraction (default)
+  - Supports attribute extraction (e.g., `{selector: "img", attribute: "src"}`)
+- **Pagination** - Configure how to navigate through multiple pages
+  - Button-based: Click "Next" button
+  - Infinite scroll: Auto-scroll to load more
+  - URL-based: Increment page number in URL
+- **Pre-Actions** - Actions to perform on category page (click, scroll, wait)
+- **Product Page Actions** - Actions to perform on each product page
+
+### 2. Start a Scraping Job
+
+1. Go to **Profiles** and click **Run** on your profile
+2. The app will:
+   - Initialize the browser with anti-detection
+   - Gather product URLs from the category page(s)
+   - Scrape each product using concurrent workers
+   - Save data and logs to the database
+3. Monitor progress in the **Jobs** tab
+   - See real-time phase updates
+   - View product counts and success/failure rates
+   - Live data updates every 3 seconds for running jobs
+
+### 3. View & Export Data
+
+1. Click **View Data** on any completed job
+2. Browse scraped product data in a searchable table
+3. Click **View Logs** on any product to see detailed scraping diagnostics
+4. Export data:
+   - **Export JSON** - Structured JSON format
+   - **Export CSV** - Flat CSV with all fields
+   - **Export Both** - Get both formats
+
+## Data Storage
+
+All data is stored in `~/Library/Application Support/ProfileScraper/`:
+
+```
+ProfileScraper/
+├── data/
+│   └── scraper.db          # SQLite database
+├── logs/
+│   └── scrape.log          # Application logs
+└── output/
+    └── {profileId}/
+        └── {jobId}/
+            └── progress.json  # Checkpoint data
+```
 
 ## Project Structure
 
 ```
 src/
-  main/           # Electron main process (Node.js)
-  renderer/       # React UI
-  shared/         # Shared types
-configs/          # Scraper profiles
-output/           # Generated data
+├── main/
+│   ├── database/         # SQLite repositories (profiles, jobs, products, logs)
+│   ├── scraper/          # Scraping engine (orchestrator, workers, crawlers)
+│   ├── ipc/              # IPC handlers for renderer communication
+│   ├── storage/          # Data export utilities
+│   └── main.ts           # Electron main process entry
+├── renderer/
+│   ├── components/       # React UI components
+│   ├── store/            # Zustand state management
+│   ├── hooks/            # React hooks
+│   └── App.tsx           # React app entry
+└── shared/
+    ├── types.ts          # Shared TypeScript types
+    └── ipc-channels.ts   # IPC channel definitions
 ```
+
+## Tech Stack
+
+- **Electron** - Desktop app framework
+- **React** - UI framework
+- **TypeScript** - Type safety
+- **Patchright** - Anti-detection browser automation (Playwright fork)
+- **SQLite** - Embedded database (node:sqlite)
+- **Tailwind CSS v4** - Styling
+- **Vite** - Build tool
+- **Zustand** - State management
+
+## Bot Evasion Features
+
+ProfileScraper includes comprehensive anti-detection measures:
+
+- Randomized user agents across Chrome versions
+- Varied viewport sizes per worker
+- Hardware specs randomization (CPU cores, memory, battery)
+- WebGL vendor spoofing
+- Navigator properties masking
+- Human-like behavior simulation:
+  - Mouse movements
+  - Random delays between actions
+  - Variable timing patterns
 
 ## License
 
