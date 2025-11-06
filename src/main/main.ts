@@ -40,7 +40,12 @@ async function createWindow(): Promise<void> {
     mainWindow.webContents.openDevTools();
   } else {
     // In production, load from built files
-    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+    // __dirname in production is app.asar/dist/main/main
+    // We need to go up to app.asar/dist/renderer/index.html
+    const rendererPath = path.join(__dirname, '../../renderer/index.html');
+    console.log('[Main] Loading renderer from:', rendererPath);
+    console.log('[Main] Renderer file exists:', require('fs').existsSync(rendererPath));
+    mainWindow.loadFile(rendererPath);
   }
 
   setupIpcHandlers(mainWindow);
