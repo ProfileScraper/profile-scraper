@@ -15,6 +15,7 @@ export function Dashboard() {
   const [profileName, setProfileName] = React.useState('example-site');
 
   const handleStart = () => {
+    console.log('Start button clicked, profile:', profileName);
     startScrape(profileName);
   };
 

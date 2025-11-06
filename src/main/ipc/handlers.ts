@@ -46,19 +46,29 @@ export function setupIpcHandlers(mainWindow: Electron.BrowserWindow): void {
 
   // Start scraping
   ipcMain.handle(IPC_CHANNELS.SCRAPE_START, async (event: IpcMainInvokeEvent, profileName: string) => {
+    console.log('[Main Process] SCRAPE_START handler called with profile:', profileName);
+    console.log('[Main Process] Current working directory:', process.cwd());
+
     const configPath = path.join(process.cwd(), 'configs', 'scraper-config.json');
+    console.log('[Main Process] Looking for config at:', configPath);
+
     const data = fs.readFileSync(configPath, 'utf-8');
     const config: ScraperConfig = JSON.parse(data);
+    console.log('[Main Process] Config loaded successfully');
 
     const profile = config.profiles[profileName];
     if (!profile) {
+      console.error('[Main Process] Profile not found:', profileName);
       throw new Error(`Profile not found: ${profileName}`);
     }
+    console.log('[Main Process] Profile found:', profile.name);
 
     const outputDir = path.join(process.cwd(), 'output');
     const checkpointPath = path.join(outputDir, 'progress.json');
+    console.log('[Main Process] Output directory:', outputDir);
 
     orchestrator = new ScrapeOrchestrator(profile, outputDir, checkpointPath);
+    console.log('[Main Process] Orchestrator created');
 
     // Forward events to renderer
     orchestrator.on('progress', (progress) => {
@@ -78,10 +88,13 @@ export function setupIpcHandlers(mainWindow: Electron.BrowserWindow): void {
     });
 
     // Start scraping (non-blocking)
+    console.log('[Main Process] Starting orchestrator...');
     orchestrator.start().catch(error => {
+      console.error('[Main Process] Orchestrator error:', error);
       mainWindow.webContents.send(IPC_CHANNELS.SCRAPE_ERROR, error);
     });
 
+    console.log('[Main Process] Orchestrator started, returning success');
     return { success: true };
   });
 

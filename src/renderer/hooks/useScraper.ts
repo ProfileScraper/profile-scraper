@@ -31,10 +31,20 @@ export function useScraper() {
   }, []);
 
   const startScrape = async (profileName: string) => {
-    if (!window.electronAPI) return;
+    console.log('startScrape called with profile:', profileName);
+    if (!window.electronAPI) {
+      console.error('electronAPI not available!');
+      return;
+    }
+    console.log('Calling electronAPI.startScrape...');
     store.reset();
     store.setRunning(true);
-    await window.electronAPI.startScrape(profileName);
+    try {
+      await window.electronAPI.startScrape(profileName);
+      console.log('startScrape IPC call completed');
+    } catch (error) {
+      console.error('startScrape error:', error);
+    }
   };
 
   const pauseScrape = async () => {
