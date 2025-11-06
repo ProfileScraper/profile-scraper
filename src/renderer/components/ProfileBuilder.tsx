@@ -635,7 +635,7 @@ export function ProfileBuilder() {
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+            <div className="flex justify-between mt-8 pt-6 border-t border-gray-400">
               <button
                 onClick={handleBack}
                 className="px-6 py-2 text-gray-600 hover:text-gray-800 font-medium"
@@ -714,7 +714,7 @@ export function ProfileBuilder() {
               </div>
 
               {/* Selector Help */}
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <div className="border border-gray-400 rounded-lg p-4 bg-gray-50">
                 <h4 className="text-sm font-semibold text-gray-700 mb-2">Selector Tips</h4>
                 <div className="space-y-2 text-xs text-gray-600">
                   <div>
@@ -750,7 +750,7 @@ export function ProfileBuilder() {
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+            <div className="flex justify-between mt-8 pt-6 border-t border-gray-400">
               <button
                 onClick={previousStep}
                 className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
@@ -814,7 +814,7 @@ export function ProfileBuilder() {
                       return (
                         <div
                           key={fieldName}
-                          className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+                          className="p-3 bg-gray-50 rounded-lg border border-gray-400"
                         >
                           {isEditing ? (
                             // Edit mode
@@ -975,7 +975,7 @@ export function ProfileBuilder() {
               </div>
 
               {/* Selector Help */}
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <div className="border border-gray-400 rounded-lg p-4 bg-gray-50">
                 <h4 className="text-sm font-semibold text-gray-700 mb-2">Playwright Selector Examples</h4>
                 <div className="space-y-2 text-xs text-gray-600">
                   <div>
@@ -1018,7 +1018,7 @@ export function ProfileBuilder() {
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+            <div className="flex justify-between mt-8 pt-6 border-t border-gray-400">
               <button
                 onClick={previousStep}
                 className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
@@ -1094,7 +1094,7 @@ export function ProfileBuilder() {
                     <div
                       {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className="space-y-2 min-h-[50px] border-2 border-dashed border-gray-200 rounded-lg p-2"
+                      className="space-y-2 min-h-[50px] border-2 border-dashed border-gray-400 rounded-lg p-2"
                     >
                       {preActions.length === 0 && (
                         <div className="text-center py-6 text-gray-400 text-sm">
@@ -1109,7 +1109,7 @@ export function ProfileBuilder() {
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
                               className={`flex items-center gap-3 p-3 bg-white border rounded-lg ${
-                                snapshot.isDragging ? 'shadow-lg border-blue-300' : 'border-gray-200'
+                                snapshot.isDragging ? 'shadow-lg border-blue-300' : 'border-gray-400'
                               }`}
                             >
                               <div className="text-gray-400">☰</div>
@@ -1192,7 +1192,7 @@ export function ProfileBuilder() {
                     <div
                       {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className="space-y-2 min-h-[50px] border-2 border-dashed border-gray-200 rounded-lg p-2"
+                      className="space-y-2 min-h-[50px] border-2 border-dashed border-gray-400 rounded-lg p-2"
                     >
                       {productPageActions.length === 0 && (
                         <div className="text-center py-6 text-gray-400 text-sm">
@@ -1207,7 +1207,7 @@ export function ProfileBuilder() {
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
                               className={`flex items-center gap-3 p-3 bg-white border rounded-lg ${
-                                snapshot.isDragging ? 'shadow-lg border-green-300' : 'border-gray-200'
+                                snapshot.isDragging ? 'shadow-lg border-green-300' : 'border-gray-400'
                               }`}
                             >
                               <div className="text-gray-400">☰</div>
@@ -1377,7 +1377,7 @@ export function ProfileBuilder() {
             )}
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+            <div className="flex justify-between mt-8 pt-6 border-t border-gray-400">
               <button
                 onClick={previousStep}
                 className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
@@ -1401,7 +1401,7 @@ export function ProfileBuilder() {
 
             <div className="space-y-6">
               {/* Browser Mode */}
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <div className="border border-gray-400 rounded-lg p-4 bg-gray-50">
                 <h3 className="text-lg font-medium text-gray-700 mb-4">Browser Mode</h3>
                 <div className="space-y-3">
                   <label className="flex items-center gap-3 cursor-pointer">
@@ -1424,7 +1424,7 @@ export function ProfileBuilder() {
               </div>
 
               {/* Data Handling */}
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <div className="border border-gray-400 rounded-lg p-4 bg-gray-50">
                 <h3 className="text-lg font-medium text-gray-700 mb-4">Data Handling</h3>
                 <div className="space-y-3">
                   <label className="flex items-center gap-3 cursor-pointer">
@@ -1447,7 +1447,7 @@ export function ProfileBuilder() {
               </div>
 
               {/* Pagination Configuration */}
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <div className="border border-gray-400 rounded-lg p-4 bg-gray-50">
                 <h3 className="text-lg font-medium text-gray-700 mb-4">Pagination Settings</h3>
 
                 <div className="space-y-4">
@@ -1537,7 +1537,7 @@ export function ProfileBuilder() {
               </div>
 
               {/* Advanced Settings */}
-              <div className="border border-gray-200 rounded-lg">
+              <div className="border border-gray-400 rounded-lg">
                 <button
                   onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
                   className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"
@@ -1547,7 +1547,7 @@ export function ProfileBuilder() {
                 </button>
 
                 {showAdvancedSettings && (
-                  <div className="border-t border-gray-200 p-4 space-y-4">
+                  <div className="border-t border-gray-400 p-4 space-y-4">
                     {/* Concurrency */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1641,7 +1641,7 @@ export function ProfileBuilder() {
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+            <div className="flex justify-between mt-8 pt-6 border-t border-gray-400">
               <button
                 onClick={previousStep}
                 className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
@@ -1666,7 +1666,7 @@ export function ProfileBuilder() {
             {/* Summary Card */}
             <div className="space-y-6">
               {/* Basic Information */}
-              <div className="border border-gray-200 rounded-lg p-4">
+              <div className="border border-gray-400 rounded-lg p-4">
                 <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <span className="text-blue-500">1.</span> Basic Information
                 </h3>
@@ -1683,14 +1683,14 @@ export function ProfileBuilder() {
               </div>
 
               {/* Selectors */}
-              <div className="border border-gray-200 rounded-lg p-4">
+              <div className="border border-gray-400 rounded-lg p-4">
                 <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <span className="text-blue-500">2.</span> Selectors
                 </h3>
                 <div className="space-y-3 text-sm">
                   <div>
                     <span className="text-gray-600">Product Link:</span>
-                    <div className="mt-1 font-mono text-xs bg-gray-50 p-2 rounded border border-gray-200">
+                    <div className="mt-1 font-mono text-xs bg-gray-50 p-2 rounded border border-gray-400">
                       {productLinkSelector}
                     </div>
                   </div>
@@ -1717,7 +1717,7 @@ export function ProfileBuilder() {
               </div>
 
               {/* Workflow */}
-              <div className="border border-gray-200 rounded-lg p-4">
+              <div className="border border-gray-400 rounded-lg p-4">
                 <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <span className="text-blue-500">3.</span> Workflow
                 </h3>
@@ -1754,7 +1754,7 @@ export function ProfileBuilder() {
               </div>
 
               {/* Configuration */}
-              <div className="border border-gray-200 rounded-lg p-4">
+              <div className="border border-gray-400 rounded-lg p-4">
                 <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <span className="text-blue-500">4.</span> Configuration
                 </h3>
@@ -1804,7 +1804,7 @@ export function ProfileBuilder() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+            <div className="flex justify-between mt-8 pt-6 border-t border-gray-400">
               <button
                 onClick={previousStep}
                 className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
@@ -1841,7 +1841,7 @@ export function ProfileBuilder() {
         {showTestModal && testResults && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-auto">
-              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+              <div className="sticky top-0 bg-white border-b border-gray-400 px-6 py-4 flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800">Test Results</h2>
                 <button
                   onClick={() => setShowTestModal(false)}
@@ -1866,7 +1866,7 @@ export function ProfileBuilder() {
 
                 {/* Category Page Results */}
                 {testResults.categoryPage && (
-                  <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="border border-gray-400 rounded-lg p-4">
                     <h3 className="font-semibold text-lg text-gray-800 mb-3">Category Page Test</h3>
                     <div className="space-y-2">
                       <div className="flex items-start gap-2">
@@ -1891,7 +1891,7 @@ export function ProfileBuilder() {
                           </summary>
                           <div className="mt-2 max-h-60 overflow-auto bg-gray-50 rounded p-3">
                             {testResults.categoryPage.urlsFound.map((url, i) => (
-                              <div key={i} className="text-sm text-gray-700 py-1 border-b border-gray-200 last:border-0">
+                              <div key={i} className="text-sm text-gray-700 py-1 border-b border-gray-400 last:border-0">
                                 <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
                                   {url}
                                 </a>
@@ -1906,7 +1906,7 @@ export function ProfileBuilder() {
 
                 {/* Product Page Results */}
                 {testResults.productPage && (
-                  <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="border border-gray-400 rounded-lg p-4">
                     <h3 className="font-semibold text-lg text-gray-800 mb-3">Product Page Test</h3>
                     <div className="space-y-2">
                       <div className="flex items-start gap-2">
@@ -1925,7 +1925,7 @@ export function ProfileBuilder() {
                           <h4 className="font-medium text-gray-700 mb-2">Extracted Fields:</h4>
                           <div className="space-y-2">
                             {Object.entries(testResults.productPage.data.fields).map(([key, value]) => (
-                              <div key={key} className="flex items-start gap-2 pb-2 border-b border-gray-200 last:border-0">
+                              <div key={key} className="flex items-start gap-2 pb-2 border-b border-gray-400 last:border-0">
                                 <span className="text-gray-600 font-medium min-w-[120px]">{key}:</span>
                                 <span className="text-gray-800 flex-1 break-words">{value || '(empty)'}</span>
                               </div>
@@ -1943,7 +1943,7 @@ export function ProfileBuilder() {
                 )}
               </div>
 
-              <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
+              <div className="sticky bottom-0 bg-gray-50 border-t border-gray-400 px-6 py-4 flex justify-end gap-3">
                 <button
                   onClick={() => setShowTestModal(false)}
                   className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"

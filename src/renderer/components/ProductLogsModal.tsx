@@ -72,7 +72,7 @@ export function ProductLogsModal({ productUrl, productId, onClose }: ProductLogs
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col">
         {/* Modal Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+        <div className="sticky top-0 bg-white border-b border-gray-400 px-6 py-4">
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold text-gray-800">Crawler Logs</h2>
@@ -213,7 +213,7 @@ export function ProductLogsModal({ productUrl, productId, onClose }: ProductLogs
         </div>
 
         {/* Modal Footer */}
-        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end">
+        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-400 px-6 py-4 flex justify-end">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors font-medium"

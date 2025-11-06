@@ -2,21 +2,25 @@ import React from 'react';
 
 export function Help() {
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center mb-8">
-            <img
-              src={new URL('../assets/logo.png', import.meta.url).href}
-              alt="ProfileScraper"
-              className="w-24 h-24 mx-auto mb-4 rounded-lg"
-            />
-            <h1 className="text-3xl font-bold text-gray-800">ProfileScraper</h1>
-            <p className="text-gray-600 mt-2">User Guide</p>
-          </div>
+    <div className="h-full flex flex-col bg-white">
+      {/* Header */}
+      <div className="h-[82px] px-6 border-b border-gray-400 flex items-center gap-3 shrink-0">
+        <img
+          src={new URL('../assets/logo.png', import.meta.url).href}
+          alt="ProfileScraper"
+          className="w-10 h-10 rounded-lg"
+        />
+        <div>
+          <h1 className="text-xl font-bold text-gray-800">Help</h1>
+          <p className="text-xs text-gray-600">User Guide</p>
+        </div>
+      </div>
 
-          <div className="prose max-w-none">
-            <section className="mb-8">
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-4xl mx-auto w-full px-8 py-8">
+
+        <div className="prose max-w-none">
+          <section className="mb-8">
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Getting Started</h2>
               <p className="text-gray-700 mb-4">
                 ProfileScraper is a powerful desktop application for scraping product data from e-commerce

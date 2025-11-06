@@ -223,62 +223,62 @@ export function JobDataViewer() {
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Header */}
-      <div className="border-b border-gray-200 px-8 py-6">
-        <div className="flex justify-between items-start">
+      <div className="h-[82px] px-6 border-b border-gray-400 flex items-center gap-4 shrink-0">
+        <button
+          onClick={() => navigate('/jobs')}
+          className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
+        >
+          ← Back
+        </button>
+        <h1 className="text-xl font-bold text-gray-800">Job Data Viewer</h1>
+      </div>
+
+      {/* Job Info Bar */}
+      {job && (
+        <div className="px-6 py-3 bg-gray-50 border-b border-gray-400 flex justify-between items-center">
           <div>
-            <button
-              onClick={() => navigate('/jobs')}
-              className="text-blue-600 hover:text-blue-800 mb-2 flex items-center gap-1 text-sm"
-            >
-              ← Back to Jobs
-            </button>
-            <h1 className="text-3xl font-bold text-gray-800">Job Data Viewer</h1>
-            {job && (
-              <div className="mt-2">
-                <p className="text-gray-600">
-                  Job ID: {job.id} | Status: <span className={job.status === 'running' ? 'text-blue-600 font-semibold' : ''}>{job.status}</span>
-                  {job.status === 'running' && job.phase && (
-                    <span className="text-gray-500 italic text-sm"> ({
-                      job.phase === 'initializing' ? 'Initializing' :
-                      job.phase === 'gathering_urls' ? 'Gathering URLs' :
-                      job.phase === 'crawling_products' ? 'Crawling Products' :
-                      job.phase === 'finalizing' ? 'Finalizing' : ''
-                    })</span>
-                  )}
-                  {' '}| {filteredData.length} products
-                  {filteredData.length !== data.length && ` (${data.length} total)`}
-                </p>
-                {job.status === 'running' && (
-                  <p className="text-sm text-blue-600 mt-1 flex items-center gap-2">
-                    <span className="inline-block w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
-                    Live updating every 3 seconds
-                  </p>
-                )}
-              </div>
+            <p className="text-sm text-gray-600">
+              Job ID: <span className="font-mono">{job.id.substring(0, 8)}</span> | Status: <span className={job.status === 'running' ? 'text-blue-600 font-semibold' : 'font-medium'}>{job.status}</span>
+              {job.status === 'running' && job.phase && (
+                <span className="text-gray-500 italic"> ({
+                  job.phase === 'initializing' ? 'Initializing' :
+                  job.phase === 'gathering_urls' ? 'Gathering URLs' :
+                  job.phase === 'crawling_products' ? 'Crawling Products' :
+                  job.phase === 'finalizing' ? 'Finalizing' : ''
+                })</span>
+              )}
+              {' '}| {filteredData.length} products
+              {filteredData.length !== data.length && ` (${data.length} total)`}
+            </p>
+            {job.status === 'running' && (
+              <p className="text-xs text-blue-600 mt-1 flex items-center gap-2">
+                <span className="inline-block w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse"></span>
+                Live updating every 3 seconds
+              </p>
             )}
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => handleExport('json')}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+              className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors font-medium"
             >
               Export JSON
             </button>
             <button
               onClick={() => handleExport('csv')}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
+              className="px-3 py-1.5 text-sm bg-green-500 text-white rounded hover:bg-green-600 transition-colors font-medium"
             >
               Export CSV
             </button>
             <button
               onClick={() => handleExport('both')}
-              className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-medium"
+              className="px-3 py-1.5 text-sm bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors font-medium"
             >
               Export Both
             </button>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="flex-1 overflow-auto">
         {data.length === 0 ? (
@@ -301,9 +301,9 @@ export function JobDataViewer() {
             </div>
           </div>
         ) : (
-          <div className="mx-8 my-6 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="mx-8 my-6 bg-gray-50 border border-gray-400 rounded-lg">
             {/* Search and Filter Controls */}
-            <div className="p-4 border-b border-gray-200 space-y-4">
+            <div className="p-4 border-b border-gray-400 space-y-4">
               {/* Search */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -380,7 +380,7 @@ export function JobDataViewer() {
             {/* Data Table */}
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b-2 border-gray-200">
+                <thead className="bg-gray-50 border-b-2 border-gray-400">
                   <tr>
                     <th
                       onClick={() => handleSort('url')}
@@ -457,7 +457,7 @@ export function JobDataViewer() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-between items-center p-4 border-t border-gray-200">
+              <div className="flex justify-between items-center p-4 border-t border-gray-400">
                 <div className="text-sm text-gray-600">
                   Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
                   {Math.min(currentPage * itemsPerPage, filteredData.length)} of{' '}
