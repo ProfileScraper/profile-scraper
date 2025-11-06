@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useScraper } from '../hooks/useScraper';
+import logoImg from '../assets/logo.png';
 
 export function Sidebar() {
   const { isRunning } = useScraper();
@@ -14,7 +15,8 @@ export function Sidebar() {
 
   return (
     <aside className="w-64 bg-white shadow-lg flex flex-col">
-      <div className="p-6 border-b">
+      <div className="p-6 border-b flex items-center gap-3">
+        <img src={logoImg} alt="ProfileScraper" className="w-10 h-10 rounded-lg" />
         <h1 className="text-xl font-bold text-gray-800">ProfileScraper</h1>
       </div>
 
