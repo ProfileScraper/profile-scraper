@@ -108,21 +108,25 @@ export class ProfileRepository {
   }
 
   private rowToProfile(row: ProfileRow): SiteProfile & { id: string; createdAt: number; updatedAt: number } {
-    return {
-      id: row.id,
-      name: row.name,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      categoryUrl: row.category_url,
-      preActions: JSON.parse(row.pre_actions),
-      pagination: JSON.parse(row.pagination),
-      productLinkSelector: row.product_link_selector || '',
-      productPageActions: JSON.parse(row.product_page_actions),
-      fieldSelectors: JSON.parse(row.field_selectors),
-      concurrency: row.concurrency,
-      delayRange: [row.delay_min, row.delay_max],
-      retries: row.retries,
-      checkpointInterval: row.checkpoint_interval
-    };
+    try {
+      return {
+        id: row.id,
+        name: row.name,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        categoryUrl: row.category_url,
+        preActions: JSON.parse(row.pre_actions),
+        pagination: JSON.parse(row.pagination),
+        productLinkSelector: row.product_link_selector || undefined,
+        productPageActions: JSON.parse(row.product_page_actions),
+        fieldSelectors: JSON.parse(row.field_selectors),
+        concurrency: row.concurrency,
+        delayRange: [row.delay_min, row.delay_max],
+        retries: row.retries,
+        checkpointInterval: row.checkpoint_interval
+      };
+    } catch (error) {
+      throw new Error(`Failed to parse profile data for ID ${row.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 }

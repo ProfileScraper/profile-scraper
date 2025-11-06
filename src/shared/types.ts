@@ -7,7 +7,7 @@ export interface SiteProfile {
   categoryUrl: string;
   preActions: Action[];
   pagination: PaginationConfig;
-  productLinkSelector: string;
+  productLinkSelector?: string;
   productPageActions: Action[];
   fieldSelectors: Record<string, string>;
   concurrency: number;

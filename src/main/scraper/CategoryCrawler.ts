@@ -50,6 +50,10 @@ export class CategoryCrawler {
   }
 
   async extractProductUrls(): Promise<string[]> {
+    if (!this.profile.productLinkSelector) {
+      throw new Error('productLinkSelector is required for crawling category pages');
+    }
+
     const elements = await this.page.locator(this.profile.productLinkSelector).all();
     const urls: string[] = [];
 
