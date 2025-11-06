@@ -17,7 +17,7 @@ export interface SiteProfile {
 }
 
 export interface PaginationConfig {
-  type: 'button' | 'scroll';
+  type: 'button' | 'infinite' | 'url';
   selector?: string;
   maxPages: number;
 }

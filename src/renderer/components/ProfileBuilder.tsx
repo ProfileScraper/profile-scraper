@@ -17,15 +17,23 @@ export function ProfileBuilder() {
     productLinkSelector,
     fieldSelectors,
     paginationSelector,
+    paginationType,
+    maxPages,
+    concurrency,
+    delayRange,
+    retries,
+    checkpointInterval,
     preActions,
     productPageActions,
     currentStep,
+    isSaving,
     setName,
     setCategoryUrl,
     setProductLinkSelector,
     addFieldSelector,
     removeFieldSelector,
     setPagination,
+    setOrchestratorSettings,
     addPreAction,
     removePreAction,
     updatePreAction,
@@ -38,6 +46,7 @@ export function ProfileBuilder() {
     nextStep,
     previousStep,
     loadProfile,
+    saveProfile,
     reset,
   } = useProfileStore();
 
@@ -56,6 +65,16 @@ export function ProfileBuilder() {
   const [showActionForm, setShowActionForm] = useState<{ type: 'pre' | 'product', actionType: Action['type'] } | null>(null);
   const [actionFormData, setActionFormData] = useState<Partial<Action>>({});
 
+  // Step 4: Orchestrator configuration
+  const [localPaginationType, setLocalPaginationType] = useState<'button' | 'infinite' | 'url'>(paginationType);
+  const [localMaxPages, setLocalMaxPages] = useState(maxPages);
+  const [localConcurrency, setLocalConcurrency] = useState(concurrency);
+  const [localDelayMin, setLocalDelayMin] = useState(delayRange[0]);
+  const [localDelayMax, setLocalDelayMax] = useState(delayRange[1]);
+  const [localRetries, setLocalRetries] = useState(retries);
+  const [localCheckpointInterval, setLocalCheckpointInterval] = useState(checkpointInterval);
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+
   useEffect(() => {
     const initializeForm = async () => {
       if (isEditMode && id) {
@@ -73,7 +92,14 @@ export function ProfileBuilder() {
     setLocalUrl(categoryUrl);
     setLocalProductLinkSelector(productLinkSelector);
     setLocalPaginationSelector(paginationSelector);
-  }, [name, categoryUrl, productLinkSelector, paginationSelector]);
+    setLocalPaginationType(paginationType);
+    setLocalMaxPages(maxPages);
+    setLocalConcurrency(concurrency);
+    setLocalDelayMin(delayRange[0]);
+    setLocalDelayMax(delayRange[1]);
+    setLocalRetries(retries);
+    setLocalCheckpointInterval(checkpointInterval);
+  }, [name, categoryUrl, productLinkSelector, paginationSelector, paginationType, maxPages, concurrency, delayRange, retries, checkpointInterval]);
 
   const validateUrl = (url: string): boolean => {
     if (!url.trim()) {
@@ -278,6 +304,39 @@ export function ProfileBuilder() {
     }
   };
 
+  // Step 4 handlers
+  const handleStep4Next = () => {
+    // Validate pagination settings
+    if (localPaginationType === 'button' && !paginationSelector.trim()) {
+      alert('Pagination selector is required when using button pagination');
+      return;
+    }
+
+    // Save pagination settings
+    setPagination(localPaginationType, paginationSelector, localMaxPages);
+
+    // Save orchestrator settings
+    setOrchestratorSettings({
+      concurrency: localConcurrency,
+      delayRange: [localDelayMin, localDelayMax],
+      retries: localRetries,
+      checkpointInterval: localCheckpointInterval,
+    });
+
+    nextStep();
+  };
+
+  // Step 5 handlers
+  const handleSaveProfile = async () => {
+    try {
+      const profileId = await saveProfile();
+      navigate('/profiles');
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+      alert('Failed to save profile. Please try again.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-3xl mx-auto">
@@ -315,8 +374,8 @@ export function ProfileBuilder() {
                     {i === 0 && 'Basic Info'}
                     {i === 1 && 'Selectors'}
                     {i === 2 && 'Workflow'}
-                    {i === 3 && 'Pagination'}
-                    {i === 4 && 'Settings'}
+                    {i === 3 && 'Settings'}
+                    {i === 4 && 'Review'}
                   </span>
                 </div>
                 {i < TOTAL_STEPS - 1 && (
@@ -905,30 +964,384 @@ export function ProfileBuilder() {
           </div>
         )}
 
-        {/* Placeholder for steps 4-5 */}
-        {currentStep > 2 && (
+        {/* Step 4: Orchestrator Config */}
+        {currentStep === 3 && (
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-6 text-gray-800">
-              Step {currentStep + 1}: Coming Soon
-            </h2>
-            <p className="text-gray-600 mb-6">
-              This step will be implemented in future updates.
-            </p>
-            <div className="flex justify-between">
+            <h2 className="text-xl font-semibold mb-6 text-gray-800">Orchestrator Configuration</h2>
+
+            <div className="space-y-6">
+              {/* Pagination Configuration */}
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <h3 className="text-lg font-medium text-gray-700 mb-4">Pagination Settings</h3>
+
+                <div className="space-y-4">
+                  {/* Pagination Type */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Pagination Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={localPaginationType}
+                      onChange={(e) => setLocalPaginationType(e.target.value as 'button' | 'infinite' | 'url')}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="button">Button (Click Next Button)</option>
+                      <option value="infinite">Infinite Scroll</option>
+                      <option value="url">URL Pattern</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {localPaginationType === 'button' && 'Clicks a "Next" button to navigate pages'}
+                      {localPaginationType === 'infinite' && 'Scrolls down to load more items dynamically'}
+                      {localPaginationType === 'url' && 'Follows URL pattern with page numbers'}
+                    </p>
+                  </div>
+
+                  {/* Pagination Selector (for button type) */}
+                  {localPaginationType === 'button' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Next Button Selector <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={paginationSelector}
+                        disabled
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 font-mono text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Configured in Step 2: {paginationSelector || 'Not set'}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Max Pages */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Maximum Pages <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={localMaxPages}
+                      onChange={(e) => setLocalMaxPages(Math.max(1, parseInt(e.target.value) || 1))}
+                      min="1"
+                      max="1000"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Maximum number of pages to scrape (1-1000)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Smart Defaults Display */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-medium text-blue-900 mb-2">Smart Defaults Active</h3>
+                <p className="text-sm text-blue-800 mb-3">
+                  The following settings are optimized for reliable scraping. Expand Advanced Settings to customize.
+                </p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-blue-600 font-medium">Concurrency:</span>
+                    <span className="ml-2 text-blue-900">{localConcurrency} workers</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-600 font-medium">Retries:</span>
+                    <span className="ml-2 text-blue-900">{localRetries} attempts</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-600 font-medium">Delay Range:</span>
+                    <span className="ml-2 text-blue-900">{localDelayMin}-{localDelayMax}ms</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-600 font-medium">Checkpoint:</span>
+                    <span className="ml-2 text-blue-900">Every {localCheckpointInterval} items</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Advanced Settings */}
+              <div className="border border-gray-200 rounded-lg">
+                <button
+                  onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                >
+                  <span className="font-medium text-gray-700">Advanced Settings</span>
+                  <span className="text-gray-500">{showAdvancedSettings ? '▼' : '▶'}</span>
+                </button>
+
+                {showAdvancedSettings && (
+                  <div className="border-t border-gray-200 p-4 space-y-4">
+                    {/* Concurrency */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Concurrency (Workers)
+                      </label>
+                      <div className="flex items-center gap-4">
+                        <input
+                          type="range"
+                          value={localConcurrency}
+                          onChange={(e) => setLocalConcurrency(parseInt(e.target.value))}
+                          min="1"
+                          max="10"
+                          className="flex-1"
+                        />
+                        <span className="text-gray-700 font-medium w-12 text-center">{localConcurrency}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Number of concurrent workers (1-10). Higher = faster but more resource-intensive.
+                      </p>
+                    </div>
+
+                    {/* Delay Range */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Delay Range (milliseconds)
+                      </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-gray-600">Minimum</label>
+                          <input
+                            type="number"
+                            value={localDelayMin}
+                            onChange={(e) => setLocalDelayMin(Math.max(0, parseInt(e.target.value) || 0))}
+                            min="0"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-600">Maximum</label>
+                          <input
+                            type="number"
+                            value={localDelayMax}
+                            onChange={(e) => setLocalDelayMax(Math.max(localDelayMin, parseInt(e.target.value) || 0))}
+                            min={localDelayMin}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Random delay between requests to avoid detection
+                      </p>
+                    </div>
+
+                    {/* Retries */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Retries
+                      </label>
+                      <input
+                        type="number"
+                        value={localRetries}
+                        onChange={(e) => setLocalRetries(Math.max(0, Math.min(10, parseInt(e.target.value) || 0)))}
+                        min="0"
+                        max="10"
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Number of retry attempts for failed requests (0-10)
+                      </p>
+                    </div>
+
+                    {/* Checkpoint Interval */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Checkpoint Interval
+                      </label>
+                      <input
+                        type="number"
+                        value={localCheckpointInterval}
+                        onChange={(e) => setLocalCheckpointInterval(Math.max(1, parseInt(e.target.value) || 1))}
+                        min="1"
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Save progress every N items to enable resume on failure
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
               <button
                 onClick={previousStep}
                 className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
               >
                 Back
               </button>
-              {currentStep < TOTAL_STEPS - 1 && (
+              <button
+                onClick={handleStep4Next}
+                className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+              >
+                Next: Review & Save
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 5: Review & Save */}
+        {currentStep === 4 && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-6 text-gray-800">Review & Save Profile</h2>
+
+            {/* Summary Card */}
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <span className="text-blue-500">1.</span> Basic Information
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex">
+                    <span className="w-32 text-gray-600">Profile Name:</span>
+                    <span className="text-gray-800 font-medium">{name}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 text-gray-600">Target URL:</span>
+                    <span className="text-gray-800 font-mono text-xs break-all">{categoryUrl}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Selectors */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <span className="text-blue-500">2.</span> Selectors
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <span className="text-gray-600">Product Link:</span>
+                    <div className="mt-1 font-mono text-xs bg-gray-50 p-2 rounded border border-gray-200">
+                      {productLinkSelector}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Field Selectors ({Object.keys(fieldSelectors).length}):</span>
+                    <div className="mt-2 space-y-1">
+                      {Object.entries(fieldSelectors).map(([field, selector]) => (
+                        <div key={field} className="flex items-start gap-2 text-xs">
+                          <span className="font-medium text-gray-700 min-w-[80px]">{field}:</span>
+                          <span className="font-mono text-gray-600 break-all">{selector}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Workflow */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <span className="text-blue-500">3.</span> Workflow
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <span className="text-gray-600">Pre-Actions ({preActions.length}):</span>
+                    {preActions.length > 0 ? (
+                      <ul className="mt-2 space-y-1 list-disc list-inside">
+                        {preActions.map((action, idx) => (
+                          <li key={idx} className="text-xs text-gray-700">
+                            {getActionLabel(action)}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-gray-500 italic mt-1">None configured</p>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Product Page Actions ({productPageActions.length}):</span>
+                    {productPageActions.length > 0 ? (
+                      <ul className="mt-2 space-y-1 list-disc list-inside">
+                        {productPageActions.map((action, idx) => (
+                          <li key={idx} className="text-xs text-gray-700">
+                            {getActionLabel(action)}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-gray-500 italic mt-1">None configured</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Configuration */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <span className="text-blue-500">4.</span> Configuration
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <span className="text-gray-600 font-medium">Pagination:</span>
+                    <div className="mt-1 space-y-1 ml-4">
+                      <div className="flex">
+                        <span className="w-24 text-gray-600">Type:</span>
+                        <span className="text-gray-800 capitalize">{paginationType}</span>
+                      </div>
+                      {paginationType === 'button' && paginationSelector && (
+                        <div className="flex">
+                          <span className="w-24 text-gray-600">Selector:</span>
+                          <span className="text-gray-800 font-mono text-xs">{paginationSelector}</span>
+                        </div>
+                      )}
+                      <div className="flex">
+                        <span className="w-24 text-gray-600">Max Pages:</span>
+                        <span className="text-gray-800">{maxPages}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 font-medium">Orchestrator:</span>
+                    <div className="mt-1 space-y-1 ml-4">
+                      <div className="flex">
+                        <span className="w-32 text-gray-600">Concurrency:</span>
+                        <span className="text-gray-800">{concurrency} workers</span>
+                      </div>
+                      <div className="flex">
+                        <span className="w-32 text-gray-600">Delay Range:</span>
+                        <span className="text-gray-800">{delayRange[0]}-{delayRange[1]}ms</span>
+                      </div>
+                      <div className="flex">
+                        <span className="w-32 text-gray-600">Retries:</span>
+                        <span className="text-gray-800">{retries} attempts</span>
+                      </div>
+                      <div className="flex">
+                        <span className="w-32 text-gray-600">Checkpoint:</span>
+                        <span className="text-gray-800">Every {checkpointInterval} items</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+              <button
+                onClick={previousStep}
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+              >
+                Back
+              </button>
+              <div className="flex gap-3">
                 <button
-                  onClick={nextStep}
-                  className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                  onClick={() => navigate('/profiles')}
+                  className="px-6 py-2 text-gray-600 hover:text-gray-800 font-medium"
                 >
-                  Next
+                  Cancel
                 </button>
-              )}
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? 'Saving...' : isEditMode ? 'Update Profile' : 'Save Profile'}
+                </button>
+              </div>
             </div>
           </div>
         )}
