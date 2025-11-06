@@ -15,6 +15,11 @@ const IPC_CHANNELS = {
   SCRAPE_ERROR: 'scrape:error',
   SCRAPE_COMPLETE: 'scrape:complete',
   LOG_MESSAGE: 'log:message',
+  PROFILE_CREATE: 'profile:create',
+  PROFILE_UPDATE: 'profile:update',
+  PROFILE_DELETE: 'profile:delete',
+  PROFILE_GET: 'profile:get',
+  PROFILE_GET_ALL: 'profile:get-all',
 };
 
 console.log('[Preload] Preload script starting...');
@@ -44,6 +49,13 @@ try {
   onComplete: (callback: (stats: any) => void) => {
     ipcRenderer.on(IPC_CHANNELS.SCRAPE_COMPLETE, (_, data) => callback(data));
   },
+
+  // Profile operations
+  createProfile: (profile: any) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_CREATE, profile),
+  updateProfile: (id: string, profile: any) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_UPDATE, id, profile),
+  deleteProfile: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_DELETE, id),
+  getProfile: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_GET, id),
+  getAllProfiles: () => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_GET_ALL),
 });
   console.log('[Preload] electronAPI exposed successfully');
 } catch (error) {

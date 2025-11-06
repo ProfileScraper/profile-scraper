@@ -15,4 +15,11 @@ export const IPC_CHANNELS = {
   SCRAPE_ERROR: 'scrape:error',
   SCRAPE_COMPLETE: 'scrape:complete',
   LOG_MESSAGE: 'log:message',
+
+  // Profile operations
+  PROFILE_CREATE: 'profile:create',
+  PROFILE_UPDATE: 'profile:update',
+  PROFILE_DELETE: 'profile:delete',
+  PROFILE_GET: 'profile:get',
+  PROFILE_GET_ALL: 'profile:get-all',
 } as const;

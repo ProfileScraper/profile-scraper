@@ -1,10 +1,15 @@
 import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
 import { setupIpcHandlers } from './ipc/handlers';
+import { setupProfileHandlers } from './ipc/profileHandlers';
+import { initDatabase } from './database/db';
 
 let mainWindow: BrowserWindow | null = null;
 
 function createWindow(): void {
+  // Initialize database before creating window
+  initDatabase();
+
   const preloadPath = path.join(__dirname, 'preload.js');
   console.log('[Main] Creating window with preload path:', preloadPath);
   console.log('[Main] __dirname:', __dirname);
@@ -30,6 +35,7 @@ function createWindow(): void {
   }
 
   setupIpcHandlers(mainWindow);
+  setupProfileHandlers();
 
   mainWindow.on('closed', () => {
     mainWindow = null;
