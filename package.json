@@ -22,7 +22,6 @@
   "license": "MIT",
   "dependencies": {
     "csv-writer": "^1.6.0",
-    "electron": "^39.1.0",
     "patchright": "^1.56.1",
     "react": "^19.2.0",
     "react-beautiful-dnd": "^13.1.1",
@@ -45,6 +44,7 @@
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
+    "electron": "^39.1.0",
     "electron-builder": "^26.0.12",
     "jest": "^30.2.0",
     "postcss": "^8.5.6",
