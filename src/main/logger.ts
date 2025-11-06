@@ -1,7 +1,17 @@
 import * as winston from 'winston';
 import * as path from 'path';
+import { app } from 'electron';
+import * as fs from 'fs';
 
-const logDir = path.join(process.cwd(), 'output');
+// Use app.getPath('userData') for logs in production, or cwd/output in development
+const logDir = app.isPackaged
+  ? path.join(app.getPath('userData'), 'logs')
+  : path.join(process.cwd(), 'output');
+
+// Ensure log directory exists
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir, { recursive: true });
+}
 
 export const logger = winston.createLogger({
   level: 'info',
