@@ -32,7 +32,7 @@ export const SCHEMA = {
       output_dir TEXT,
       checkpoint_path TEXT,
       error_message TEXT,
-      FOREIGN KEY (profile_id) REFERENCES profiles(id)
+      FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
     )
   `,
   JOB_ERRORS: `
@@ -42,7 +42,7 @@ export const SCHEMA = {
       url TEXT NOT NULL,
       error_message TEXT NOT NULL,
       timestamp INTEGER NOT NULL,
-      FOREIGN KEY (job_id) REFERENCES jobs(id)
+      FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
     )
   `
 };
