@@ -15,8 +15,8 @@ if (!fs.existsSync(browsersPath)) {
 }
 
 try {
-  // Install ARM browsers
-  execSync('npx patchright install chromium --platform=darwin-arm64', {
+  // Install ARM browsers (native on ARM Macs, via Rosetta on Intel Macs if supported)
+  execSync('npx patchright install chromium', {
     env: {
       ...process.env,
       PLAYWRIGHT_BROWSERS_PATH: browsersPath,

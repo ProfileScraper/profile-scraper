@@ -15,8 +15,9 @@ if (!fs.existsSync(browsersPath)) {
 }
 
 try {
-  // Install Intel browsers
-  execSync('npx patchright install chromium --platform=darwin-x64', {
+  // Install Intel browsers using Rosetta on ARM Macs
+  // On Intel Macs, arch -x86_64 is a no-op
+  execSync('arch -x86_64 npx patchright install chromium', {
     env: {
       ...process.env,
       PLAYWRIGHT_BROWSERS_PATH: browsersPath,
