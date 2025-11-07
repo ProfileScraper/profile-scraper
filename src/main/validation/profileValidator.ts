@@ -46,7 +46,7 @@ export class ProfileValidator {
 
     } catch (error) {
       result.valid = false;
-      result.errors.push(`Invalid JSON: ${error.message}`);
+      result.errors.push(`Invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     return result;
