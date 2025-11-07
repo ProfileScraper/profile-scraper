@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { ProductData } from '../../shared/types';
-import type { Job } from '../types/electron';
+import type { Job, JobLog } from '../types/electron';
 import { ProductLogsModal } from './ProductLogsModal';
 
 type SortDirection = 'asc' | 'desc' | null;
@@ -16,6 +16,8 @@ export function JobDataViewer() {
   const navigate = useNavigate();
   const [job, setJob] = useState<Job | null>(null);
   const [data, setData] = useState<ProductWithId[]>([]);
+  const [logs, setLogs] = useState<JobLog[]>([]);
+  const [showLogs, setShowLogs] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -25,8 +27,10 @@ export function JobDataViewer() {
   const [filterField, setFilterField] = useState<string>('');
   const [filterValue, setFilterValue] = useState<string>('');
   const [selectedProductForLogs, setSelectedProductForLogs] = useState<{ url: string; id: number } | null>(null);
+  const [screenshotDataUrl, setScreenshotDataUrl] = useState<string | null>(null);
   const itemsPerPage = 50;
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const logsEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const loadJobData = async () => {
@@ -34,13 +38,45 @@ export function JobDataViewer() {
 
       try {
         setLoading(true);
-        const [jobData, productData] = await Promise.all([
+        const [jobData, productData, jobLogs] = await Promise.all([
           window.electronAPI.getJob(id),
           window.electronAPI.getJobData(id),
+          window.electronAPI.getJobLogs(id),
         ]);
 
         setJob(jobData);
         setData(productData);
+        setLogs(jobLogs);
+
+        // Check if job failed with bot detection and has a screenshot
+        console.log('[JobDataViewer] Job status:', jobData.status);
+        console.log('[JobDataViewer] Error message:', jobData.errorMessage);
+
+        if (jobData.status === 'failed' && jobData.errorMessage) {
+          const screenshotMatch = jobData.errorMessage.match(/Screenshot saved to: (.+?)$/m);
+          console.log('[JobDataViewer] Screenshot match result:', screenshotMatch);
+
+          if (screenshotMatch && screenshotMatch[1]) {
+            const screenshotPath = screenshotMatch[1].trim();
+            console.log('[JobDataViewer] Loading bot detection screenshot from:', screenshotPath);
+
+            try {
+              const result = await window.electronAPI.getJobScreenshot(screenshotPath);
+              console.log('[JobDataViewer] Screenshot load result:', result);
+
+              if (result.success && result.dataUrl) {
+                setScreenshotDataUrl(result.dataUrl);
+                console.log('[JobDataViewer] Screenshot loaded successfully');
+              } else {
+                console.log('[JobDataViewer] Screenshot load failed:', result.error);
+              }
+            } catch (screenshotErr) {
+              console.error('[JobDataViewer] Exception loading screenshot:', screenshotErr);
+            }
+          } else {
+            console.log('[JobDataViewer] No screenshot path found in error message');
+          }
+        }
       } catch (err) {
         console.error('Failed to load job data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -62,13 +98,15 @@ export function JobDataViewer() {
           // Refresh every 3 seconds while job is running
           intervalRef.current = setInterval(async () => {
             try {
-              const [updatedJob, updatedData] = await Promise.all([
+              const [updatedJob, updatedData, updatedLogs] = await Promise.all([
                 window.electronAPI.getJob(id),
                 window.electronAPI.getJobData(id),
+                window.electronAPI.getJobLogs(id),
               ]);
 
               setJob(updatedJob);
               setData(updatedData);
+              setLogs(updatedLogs);
 
               // Stop refreshing if job is no longer running
               if (updatedJob.status !== 'running' && intervalRef.current) {
@@ -94,6 +132,13 @@ export function JobDataViewer() {
       }
     };
   }, [id]);
+
+  // Auto-scroll logs when new logs arrive and logs panel is open
+  useEffect(() => {
+    if (showLogs && logsEndRef.current) {
+      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logs, showLogs]);
 
   const handleExport = async (format: 'json' | 'csv' | 'both') => {
     if (!id) return;
@@ -238,7 +283,7 @@ export function JobDataViewer() {
         <div className="px-6 py-3 bg-gray-50 border-b border-gray-400 flex justify-between items-center">
           <div>
             <p className="text-sm text-gray-600">
-              Job ID: <span className="font-mono">{job.id.substring(0, 8)}</span> | Status: <span className={job.status === 'running' ? 'text-blue-600 font-semibold' : 'font-medium'}>{job.status}</span>
+              Job ID: <span className="font-mono">{job.id.substring(0, 8)}</span> | Status: <span className={job.status === 'running' ? 'text-blue-600 font-semibold' : job.status === 'failed' ? 'text-red-600 font-semibold' : 'font-medium'}>{job.status}</span>
               {job.status === 'running' && job.phase && (
                 <span className="text-gray-500 italic"> ({
                   job.phase === 'initializing' ? 'Initializing' :
@@ -249,6 +294,7 @@ export function JobDataViewer() {
               )}
               {' '}| {filteredData.length} products
               {filteredData.length !== data.length && ` (${data.length} total)`}
+              {' '}| {logs.length} logs
             </p>
             {job.status === 'running' && (
               <p className="text-xs text-blue-600 mt-1 flex items-center gap-2">
@@ -258,6 +304,16 @@ export function JobDataViewer() {
             )}
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={() => setShowLogs(!showLogs)}
+              className={`px-3 py-1.5 text-sm rounded transition-colors font-medium ${
+                showLogs
+                  ? 'bg-gray-600 text-white hover:bg-gray-700'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {showLogs ? 'Hide Logs' : 'Show Logs'} ({logs.length})
+            </button>
             <button
               onClick={() => handleExport('json')}
               className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors font-medium"
@@ -276,6 +332,113 @@ export function JobDataViewer() {
             >
               Export Both
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bot Detection Error & Screenshot */}
+      {job && job.status === 'failed' && job.errorMessage && screenshotDataUrl && (
+        <div className="mx-8 my-6 bg-red-50 border-2 border-red-300 rounded-lg p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-red-900 mb-2">Job Failed: Bot Detection</h3>
+              <p className="text-sm text-red-800 mb-4">{job.errorMessage}</p>
+
+              <details className="mt-4">
+                <summary className="cursor-pointer text-sm font-semibold text-red-900 hover:text-red-700 select-none">
+                  View Bot Detection Screenshot
+                </summary>
+                <div className="mt-4 border-2 border-red-400 rounded-lg overflow-hidden">
+                  <img
+                    src={screenshotDataUrl}
+                    alt="Bot detection page screenshot"
+                    className="w-full h-auto"
+                  />
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Logs Panel */}
+      {showLogs && (
+        <div className="mx-8 my-6 bg-gray-50 border border-gray-400 rounded-lg">
+          <div className="p-4 border-b border-gray-400 flex justify-between items-center">
+            <h2 className="text-lg font-bold text-gray-800">Job Logs</h2>
+            {job?.status === 'running' && (
+              <span className="text-xs text-blue-600 flex items-center gap-2">
+                <span className="inline-block w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse"></span>
+                Live updating
+              </span>
+            )}
+          </div>
+          <div className="max-h-96 overflow-y-auto">
+            {logs.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">No logs available</div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {logs.map((log) => (
+                  <div
+                    key={log.id}
+                    className={`p-3 text-sm ${
+                      log.logLevel === 'error' ? 'bg-red-50' :
+                      log.logLevel === 'warning' ? 'bg-yellow-50' :
+                      log.logLevel === 'debug' ? 'bg-gray-50' :
+                      'bg-white'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 min-w-[120px]">
+                        <div className="text-xs text-gray-500">
+                          {new Date(log.timestamp).toLocaleTimeString()}
+                        </div>
+                        <div className={`text-xs font-medium ${
+                          log.logLevel === 'error' ? 'text-red-700' :
+                          log.logLevel === 'warning' ? 'text-yellow-700' :
+                          log.logLevel === 'debug' ? 'text-gray-600' :
+                          'text-blue-700'
+                        }`}>
+                          {log.logLevel.toUpperCase()}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-gray-600 mb-1 truncate" title={log.productUrl}>
+                          {log.productUrl}
+                        </div>
+                        <div className="text-sm text-gray-800">{log.message}</div>
+                        {log.fieldName && (
+                          <div className="text-xs text-gray-600 mt-1">
+                            Field: <span className="font-mono">{log.fieldName}</span>
+                          </div>
+                        )}
+                        {log.selector && (
+                          <div className="text-xs text-gray-600">
+                            Selector: <span className="font-mono">{log.selector}</span>
+                          </div>
+                        )}
+                        {log.elementCount !== undefined && (
+                          <div className="text-xs text-gray-600">
+                            Elements found: {log.elementCount}
+                          </div>
+                        )}
+                        {log.errorMessage && (
+                          <div className="text-xs text-red-700 mt-1">
+                            Error: {log.errorMessage}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div ref={logsEndRef} />
+              </div>
+            )}
           </div>
         </div>
       )}

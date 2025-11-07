@@ -6,6 +6,8 @@ files:
   - dist/**/*
   - node_modules/**/*
   - package.json
+asarUnpack:
+  - node_modules/patchright/**/*
 mac:
   target:
     - target: dmg

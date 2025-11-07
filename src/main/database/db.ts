@@ -61,6 +61,13 @@ function runMigrations(db: DatabaseSync): void {
     `);
     console.log('[Database] Migration complete: profile sharing metadata fields added');
   }
+
+  // Migration 6: Add in_library column for profile following
+  if (!columnNames.has('in_library')) {
+    console.log('[Database] Running migration: Adding in_library column to profiles table');
+    db.exec('ALTER TABLE profiles ADD COLUMN in_library INTEGER DEFAULT 1');
+    console.log('[Database] Migration complete: in_library column added');
+  }
 }
 
 export function initDatabase(dataPath?: string): DatabaseSync {

@@ -33,6 +33,7 @@ export interface SiteProfile {
   tags?: string[];
   version?: string;
   lastSynced?: number;
+  inLibrary?: boolean; // Whether user has added this profile to their library
 }
 
 export interface ProfileMetadata {

@@ -9,3 +9,4 @@ release/
 .env
 .env.local
 playwright-browsers/
+.browser-downloads/

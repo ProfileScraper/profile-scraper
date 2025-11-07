@@ -91,7 +91,7 @@ Navigate to the **Profiles** tab and click **Create New Profile**:
    - **Export CSV** - Flat CSV with all fields
    - **Export Both** - Get both formats
 
-## Profile Sharing & Marketplace
+## Profile Sharing & Explorer
 
 ### Importing Profiles
 
@@ -114,10 +114,10 @@ Navigate to the **Profiles** tab and click **Create New Profile**:
 3. Choose save location
 4. Profile downloads as JSON file
 
-### Marketplace
+### Profile Explorer
 
 Browse community-contributed public profiles:
-1. Navigate to "Marketplace" tab
+1. Navigate to "Profile Explorer" tab
 2. Search by name, domain, or author
 3. Filter by tags (e-commerce, real-estate, etc.)
 4. Click "Clone" to create an editable copy

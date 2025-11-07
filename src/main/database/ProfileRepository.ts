@@ -30,6 +30,7 @@ export interface ProfileRow {
   tags: string | null;
   version: string | null;
   last_synced: number | null;
+  in_library: number;
 }
 
 export class ProfileRepository {
@@ -37,6 +38,13 @@ export class ProfileRepository {
 
   create(profile: SiteProfile): string {
     const id = randomUUID();
+    return this.createWithId(id, profile);
+  }
+
+  /**
+   * Create a profile with a specific ID (used for syncing from CDN where ID must be preserved)
+   */
+  createWithId(id: string, profile: SiteProfile): string {
     const now = Date.now();
 
     const stmt = this.db.prepare(`
@@ -47,8 +55,8 @@ export class ProfileRepository {
         delay_min, delay_max, retries, checkpoint_interval,
         headless, overwrite_existing,
         is_public, is_readonly, source_profile_id, source_url,
-        author, description, tags, version, last_synced
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        author, description, tags, version, last_synced, in_library
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -78,7 +86,8 @@ export class ProfileRepository {
       profile.description || null,
       profile.tags ? JSON.stringify(profile.tags) : null,
       profile.version || null,
-      profile.lastSynced || null
+      profile.lastSynced || null,
+      profile.inLibrary !== false ? 1 : 0 // Default to in library unless explicitly false
     );
 
     return id;
@@ -106,6 +115,18 @@ export class ProfileRepository {
       throw new Error('Cannot update read-only profile. Clone it first.');
     }
 
+    this.performUpdate(id, profile);
+  }
+
+  /**
+   * Update a profile during sync, bypassing read-only protection
+   * (used when syncing public profiles from CDN)
+   */
+  syncUpdate(id: string, profile: SiteProfile): void {
+    this.performUpdate(id, profile);
+  }
+
+  private performUpdate(id: string, profile: SiteProfile): void {
     const now = Date.now();
 
     const stmt = this.db.prepare(`
@@ -116,7 +137,7 @@ export class ProfileRepository {
         concurrency = ?, delay_min = ?, delay_max = ?,
         retries = ?, checkpoint_interval = ?, headless = ?,
         overwrite_existing = ?,
-        author = ?, description = ?, tags = ?, version = ?
+        author = ?, description = ?, tags = ?, version = ?, last_synced = ?
       WHERE id = ?
     `);
 
@@ -141,6 +162,7 @@ export class ProfileRepository {
       profile.description || null,
       profile.tags ? JSON.stringify(profile.tags) : null,
       profile.version || null,
+      profile.lastSynced || null,
       id
     );
   }
@@ -148,6 +170,14 @@ export class ProfileRepository {
   delete(id: string): void {
     const stmt = this.db.prepare('DELETE FROM profiles WHERE id = ?');
     stmt.run(id);
+  }
+
+  /**
+   * Toggle in_library status for a profile
+   */
+  toggleInLibrary(id: string, inLibrary: boolean): void {
+    const stmt = this.db.prepare('UPDATE profiles SET in_library = ? WHERE id = ?');
+    stmt.run(inLibrary ? 1 : 0, id);
   }
 
   private rowToProfile(row: ProfileRow): SiteProfile & { id: string; createdAt: number; updatedAt: number } {
@@ -186,7 +216,8 @@ export class ProfileRepository {
         description: row.description || undefined,
         tags: row.tags ? JSON.parse(row.tags) : undefined,
         version: row.version || undefined,
-        lastSynced: row.last_synced || undefined
+        lastSynced: row.last_synced || undefined,
+        inLibrary: Boolean(row.in_library)
       };
     } catch (error) {
       throw new Error(`Failed to parse profile data for ID ${row.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);

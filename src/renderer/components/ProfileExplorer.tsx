@@ -1,24 +1,35 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ProfileWithMetadata } from '../../shared/types';
 import { getDomain } from '../utils/profileGrouping';
 import { ProfileCard } from './ProfileCard';
 
-export function Marketplace() {
+export function ProfileExplorer() {
+  const navigate = useNavigate();
   const [profiles, setProfiles] = useState<ProfileWithMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [hasAutoSynced, setHasAutoSynced] = useState(false);
 
   useEffect(() => {
-    loadPublicProfiles();
+    initializeProfileExplorer();
   }, []);
 
-  const loadPublicProfiles = async () => {
+  const initializeProfileExplorer = async () => {
     setLoading(true);
     try {
+      // First load from local DB
       const publicProfiles = await window.electronAPI.getPublicProfiles();
       setProfiles(publicProfiles as ProfileWithMetadata[]);
+
+      // If no profiles exist, auto-sync on first load
+      if (publicProfiles.length === 0 && !hasAutoSynced) {
+        console.log('[ProfileExplorer] No profiles found, syncing automatically...');
+        setHasAutoSynced(true);
+        await handleSync();
+      }
     } catch (error) {
       console.error('Failed to load public profiles:', error);
     } finally {
@@ -26,10 +37,19 @@ export function Marketplace() {
     }
   };
 
+  const loadPublicProfiles = async () => {
+    try {
+      const publicProfiles = await window.electronAPI.getPublicProfiles();
+      setProfiles(publicProfiles as ProfileWithMetadata[]);
+    } catch (error) {
+      console.error('Failed to load public profiles:', error);
+    }
+  };
+
   const handleSync = async () => {
     setSyncing(true);
     try {
-      const result = await window.electronAPI.syncMarketplace();
+      const result = await window.electronAPI.syncProfileExplorer();
       if (result.success) {
         await loadPublicProfiles();
         console.log(`Synced: +${result.profilesAdded} new, ${result.profilesUpdated} updated`);
@@ -72,11 +92,10 @@ export function Marketplace() {
   };
 
   const handleRun = async (id: string) => {
-    const profile = profiles.find(p => p.id === id);
-    if (!profile) return;
-
     try {
-      await window.electronAPI.startScrape(profile.name);
+      await window.electronAPI.startScrape(id);
+      // Navigate to jobs page to show progress
+      navigate('/jobs');
     } catch (error) {
       console.error('Failed to start scrape:', error);
     }
@@ -92,13 +111,13 @@ export function Marketplace() {
   };
 
   if (loading) {
-    return <div className="p-8">Loading marketplace...</div>;
+    return <div className="p-8">Loading profile explorer...</div>;
   }
 
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Profile Marketplace</h1>
+        <h1 className="text-2xl font-bold">Profile Explorer</h1>
 
         <button
           onClick={handleSync}
@@ -166,9 +185,11 @@ export function Marketplace() {
               createdAt={profile.created_at}
               isReadonly={profile.isReadonly}
               isPublic={profile.isPublic}
+              inLibrary={profile.inLibrary}
               sourceProfileId={profile.sourceProfileId}
               author={profile.author}
               description={profile.description}
+              hideClone={true}
               onDelete={handleDelete}
               onRun={handleRun}
             />

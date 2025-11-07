@@ -1,11 +1,9 @@
 import { ProfileRepository } from '../database/ProfileRepository';
 import { ProfileValidator } from '../validation/profileValidator';
-import { SyncResult, PublicProfilesResponse } from '../../shared/marketplace-types';
+import { SyncResult, PublicProfilesResponse } from '../../shared/profileExplorer-types';
 
-export class MarketplaceService {
-  // TODO: Configure this URL to point to the actual CDN hosting public profiles
-  // Example: 'https://raw.githubusercontent.com/your-org/profilescraper-profiles/main/public-profiles.json'
-  private cdnUrl = 'https://raw.githubusercontent.com/yourusername/profilescraper-profiles/main/public-profiles.json';
+export class ProfileExplorerService {
+  private cdnUrl = 'https://raw.githubusercontent.com/ProfileScraper/profile-explorer/master/public-profiles.json';
 
   constructor(private profileRepo: ProfileRepository) {}
 
@@ -42,37 +40,28 @@ export class MarketplaceService {
           const existing = this.profileRepo.getById(profileData.id);
 
           if (!existing) {
-            // Insert new public profile - need to create with the CDN-provided ID
+            // Insert new public profile with the CDN-provided ID
             profileData.isPublic = true;
             profileData.isReadonly = true;
+            profileData.inLibrary = false; // Not in library by default
             profileData.lastSynced = Date.now();
 
-            // NOTE: ProfileRepository.create() generates a new UUID and ignores the ID from profileData
-            // This is a known issue - we need to either:
-            // 1. Add a createWithId() method to ProfileRepository, or
-            // 2. Modify create() to accept and use an optional ID parameter
-            // For now, this will create a new ID, which means profiles won't sync properly on subsequent runs
-            this.profileRepo.create(profileData);
+            // Use createWithId to preserve the CDN ID
+            this.profileRepo.createWithId(profileData.id, profileData);
             result.profilesAdded++;
+            console.log(`[ProfileExplorer] Added profile: ${profileData.name} (${profileData.id})`);
           } else if (profileData.updated_at > existing.updatedAt) {
             // Update existing profile only if CDN version is newer
-            // Compare CDN's updated_at with local profile's updatedAt timestamp
             profileData.lastSynced = Date.now();
+            // Preserve the existing inLibrary status
+            profileData.inLibrary = existing.inLibrary;
 
-            // NOTE: ProfileRepository.update() blocks updates to read-only profiles
-            // Since marketplace profiles are read-only, we need a bypass mechanism
-            // Options:
-            // 1. Add an updateReadonly() method to ProfileRepository
-            // 2. Temporarily clear isReadonly flag (risky - requires direct SQL)
-            // 3. Add a 'forceUpdate' parameter to update() method
-            // For now, this will throw an error when trying to update read-only profiles
-            try {
-              this.profileRepo.update(profileData.id, profileData);
-              result.profilesUpdated++;
-            } catch (error) {
-              // If update fails due to read-only protection, log it
-              result.errors!.push(`Cannot update read-only profile ${profileData.name}. This needs a bypass mechanism.`);
-            }
+            // Use syncUpdate to bypass read-only protection
+            this.profileRepo.syncUpdate(profileData.id, profileData);
+            result.profilesUpdated++;
+            console.log(`[ProfileExplorer] Updated profile: ${profileData.name} (${profileData.id})`);
+          } else {
+            console.log(`[ProfileExplorer] Profile already up to date: ${profileData.name} (${profileData.id})`);
           }
 
         } catch (error) {

@@ -168,4 +168,18 @@ export function setupProfileHandlers(): void {
       return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   });
+
+  ipcMain.handle(IPC_CHANNELS.PROFILE_TOGGLE_IN_LIBRARY, async (event: IpcMainInvokeEvent, id: string, inLibrary: boolean) => {
+    try {
+      if (!isValidUUID(id)) {
+        throw new Error(`Invalid profile ID format: ${id}`);
+      }
+      console.log('[IPC] Toggling inLibrary for profile:', id, 'to', inLibrary);
+      profileRepo.toggleInLibrary(id, inLibrary);
+      return { success: true };
+    } catch (error) {
+      console.error('[IPC] Error toggling inLibrary:', error);
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
 }

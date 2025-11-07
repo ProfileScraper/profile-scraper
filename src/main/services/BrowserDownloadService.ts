@@ -79,24 +79,65 @@ export class BrowserDownloadService {
       notify('Downloading Chromium browser...');
       notify('This may take a few minutes...');
 
-      const npxPath = path.join(process.cwd(), 'node_modules', '.bin', 'patchright');
-      const command = app.isPackaged
-        ? `"${npxPath}" install chromium`
-        : 'npx patchright install chromium';
+      // Determine the correct path to patchright
+      let command: string;
+      if (app.isPackaged) {
+        // In packaged app, patchright is unpacked to app.asar.unpacked
+        const appPath = app.getAppPath();
+
+        // Try unpacked location first (app.asar.unpacked/node_modules)
+        const unpackedPath = appPath.replace('app.asar', 'app.asar.unpacked');
+        const pathrightCli = path.join(unpackedPath, 'node_modules', 'patchright', 'cli.js');
+
+        // Also try regular asar location as fallback
+        const pathrightCliAsar = path.join(appPath, 'node_modules', 'patchright', 'cli.js');
+
+        logInfo(`[BrowserDownload] Checking for patchright cli at: ${pathrightCli}`);
+        logInfo(`[BrowserDownload] CLI exists: ${fs.existsSync(pathrightCli)}`);
+
+        if (fs.existsSync(pathrightCli)) {
+          // Call cli.js directly with node
+          command = `node "${pathrightCli}" install chromium`;
+        } else if (fs.existsSync(pathrightCliAsar)) {
+          command = `node "${pathrightCliAsar}" install chromium`;
+        } else {
+          // Fallback: try using npx from system PATH
+          logInfo('[BrowserDownload] patchright cli not found, falling back to npx');
+          command = 'npx patchright install chromium';
+        }
+      } else {
+        // In development, use npx
+        command = 'npx patchright install chromium';
+      }
 
       logInfo(`[BrowserDownload] Running command: ${command}`);
       logInfo(`[BrowserDownload] CWD: ${process.cwd()}`);
+      logInfo(`[BrowserDownload] App path: ${app.getAppPath()}`);
 
       try {
-        execSync(command, {
+        const result = execSync(command, {
           stdio: 'pipe',
           env: {
             ...process.env,
             PLAYWRIGHT_BROWSERS_PATH: this.browsersPath,
           },
+          encoding: 'utf-8',
         });
+
+        logInfo(`[BrowserDownload] Command output: ${result}`);
       } catch (execError: any) {
         logError('[BrowserDownload] execSync error', execError);
+
+        // Log detailed error information
+        if (execError.stdout) {
+          logInfo(`[BrowserDownload] stdout: ${execError.stdout}`);
+        }
+        if (execError.stderr) {
+          logError('[BrowserDownload] stderr: ' + execError.stderr, new Error(execError.stderr));
+        }
+        if (execError.message) {
+          logInfo(`[BrowserDownload] Error message: ${execError.message}`);
+        }
 
         // Check if browser was actually downloaded despite the error
         if (this.areBrowsersInstalled()) {

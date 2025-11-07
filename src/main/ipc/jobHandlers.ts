@@ -291,4 +291,28 @@ export function setupJobHandlers(): void {
       throw new Error(`Failed to get quality stats: ${error instanceof Error ? error.message : String(error)}`);
     }
   });
+
+  /**
+   * Get screenshot file as base64 data URL for display in UI
+   */
+  ipcMain.handle(IPC_CHANNELS.JOB_GET_SCREENSHOT, async (event: IpcMainInvokeEvent, screenshotPath: string) => {
+    try {
+      console.log('[IPC] Reading screenshot:', screenshotPath);
+
+      // Validate the file exists and is accessible
+      if (!fs.existsSync(screenshotPath)) {
+        throw new Error(`Screenshot file not found: ${screenshotPath}`);
+      }
+
+      // Read the file as base64
+      const imageBuffer = fs.readFileSync(screenshotPath);
+      const base64Image = imageBuffer.toString('base64');
+      const dataUrl = `data:image/png;base64,${base64Image}`;
+
+      return { success: true, dataUrl };
+    } catch (error) {
+      console.error('[IPC] Error reading screenshot:', error);
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
 }
