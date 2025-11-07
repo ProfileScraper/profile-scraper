@@ -6,8 +6,13 @@ files:
   - dist/**/*
   - node_modules/**/*
   - package.json
+  - from: playwright-browsers-${arch}
+    to: browsers
+    filter:
+      - "**/*"
 asarUnpack:
   - node_modules/patchright/**/*
+  - browsers/**/*
 mac:
   target:
     - target: dmg
@@ -16,6 +21,7 @@ mac:
         - arm64
   category: public.app-category.utilities
   icon: assets/icon.icns
+  artifactName: ${productName}-${version}-${arch}.${ext}
 win:
   target:
     - target: nsis
