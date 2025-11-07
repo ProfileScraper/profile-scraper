@@ -14,11 +14,7 @@ extraResources:
 asarUnpack:
   - node_modules/patchright/**/*
 mac:
-  target:
-    - target: dmg
-      arch:
-        - x64
-        - arm64
+  target: dmg
   category: public.app-category.utilities
   icon: assets/icon.icns
   artifactName: ${productName}-${version}-${arch}.${ext}
