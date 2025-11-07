@@ -21,6 +21,11 @@ const IPC_CHANNELS = {
   PROFILE_DELETE: 'profile:delete',
   PROFILE_GET: 'profile:get',
   PROFILE_GET_ALL: 'profile:get-all',
+  PROFILE_EXPORT: 'profile:export',
+  PROFILE_IMPORT_FILE: 'profile:import-file',
+  PROFILE_IMPORT_URL: 'profile:import-url',
+  PROFILE_VALIDATE_JSON: 'profile:validate-json',
+  PROFILE_CLONE: 'profile:clone',
   JOB_GET_ALL: 'job:get-all',
   JOB_GET: 'job:get',
   JOB_GET_ERRORS: 'job:get-errors',
@@ -71,6 +76,11 @@ try {
   deleteProfile: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_DELETE, id),
   getProfile: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_GET, id),
   getAllProfiles: () => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_GET_ALL),
+  exportProfile: (profileId: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_EXPORT, profileId),
+  importProfileFromFile: () => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_IMPORT_FILE),
+  importProfileFromURL: (url: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_IMPORT_URL, url),
+  validateProfileJSON: (json: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_VALIDATE_JSON, json),
+  cloneProfile: (sourceId: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_CLONE, sourceId),
 
   // Job operations
   getAllJobs: (filter?: { profileId?: string; status?: string }) => ipcRenderer.invoke(IPC_CHANNELS.JOB_GET_ALL, filter),

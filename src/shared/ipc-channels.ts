@@ -22,6 +22,11 @@ export const IPC_CHANNELS = {
   PROFILE_DELETE: 'profile:delete',
   PROFILE_GET: 'profile:get',
   PROFILE_GET_ALL: 'profile:get-all',
+  PROFILE_EXPORT: 'profile:export',
+  PROFILE_IMPORT_FILE: 'profile:import-file',
+  PROFILE_IMPORT_URL: 'profile:import-url',
+  PROFILE_VALIDATE_JSON: 'profile:validate-json',
+  PROFILE_CLONE: 'profile:clone',
 
   // Job operations
   JOB_GET_ALL: 'job:get-all',
