@@ -92,14 +92,19 @@ export class BrowserDownloadService {
         // Also try regular asar location as fallback
         const pathrightCliAsar = path.join(appPath, 'node_modules', 'patchright', 'cli.js');
 
+        // Use process.execPath which points to the Electron executable
+        // Electron's node runtime can execute JavaScript files
+        const nodeExecutable = process.execPath;
+
         logInfo(`[BrowserDownload] Checking for patchright cli at: ${pathrightCli}`);
         logInfo(`[BrowserDownload] CLI exists: ${fs.existsSync(pathrightCli)}`);
+        logInfo(`[BrowserDownload] Node executable: ${nodeExecutable}`);
 
         if (fs.existsSync(pathrightCli)) {
-          // Call cli.js directly with node
-          command = `node "${pathrightCli}" install chromium`;
+          // Call cli.js directly with Electron's Node runtime
+          command = `"${nodeExecutable}" "${pathrightCli}" install chromium`;
         } else if (fs.existsSync(pathrightCliAsar)) {
-          command = `node "${pathrightCliAsar}" install chromium`;
+          command = `"${nodeExecutable}" "${pathrightCliAsar}" install chromium`;
         } else {
           // Fallback: try using npx from system PATH
           logInfo('[BrowserDownload] patchright cli not found, falling back to npx');
