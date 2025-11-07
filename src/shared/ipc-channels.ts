@@ -27,10 +27,20 @@ export const IPC_CHANNELS = {
   PROFILE_IMPORT_URL: 'profile:import-url',
   PROFILE_VALIDATE_JSON: 'profile:validate-json',
   PROFILE_CLONE: 'profile:clone',
+  PROFILE_TOGGLE_IN_LIBRARY: 'profile:toggle-in-library',
 
-  // Marketplace operations
-  MARKETPLACE_SYNC: 'marketplace:sync',
-  MARKETPLACE_GET_ALL: 'marketplace:get-all',
+  // Profile Explorer operations
+  PROFILE_EXPLORER_SYNC: 'profileExplorer:sync',
+  PROFILE_EXPLORER_GET_ALL: 'profileExplorer:get-all',
+
+  // GitHub authentication
+  GITHUB_AUTH_START: 'github:auth:start',
+  GITHUB_AUTH_STATUS: 'github:auth:status',
+  GITHUB_AUTH_LOGOUT: 'github:auth:logout',
+  GITHUB_AUTH_GET_USER: 'github:auth:get-user',
+
+  // GitHub publishing
+  GITHUB_PUBLISH_PROFILE: 'github:publish:profile',
 
   // Job operations
   JOB_GET_ALL: 'job:get-all',
@@ -41,6 +51,7 @@ export const IPC_CHANNELS = {
   JOB_DELETE: 'job:delete',
   JOB_DELETE_EMPTY: 'job:delete-empty',
   JOB_GET_QUALITY_STATS: 'job:get-quality-stats',
+  JOB_GET_SCREENSHOT: 'job:get-screenshot',
 
   // Data management operations
   DATA_GET_PRODUCTS: 'data:get-products',
@@ -55,6 +66,12 @@ export const IPC_CHANNELS = {
   // Product logs
   LOGS_GET_BY_PRODUCT_ID: 'logs:get-by-product-id',
   LOGS_GET_BY_JOB_ID: 'logs:get-by-job-id',
+
+  // Browser management
+  BROWSER_CHECK_INSTALLED: 'browser:check-installed',
+  BROWSER_DOWNLOAD: 'browser:download',
+  BROWSER_DOWNLOAD_PROGRESS: 'browser:download-progress',
+  BROWSER_GET_INFO: 'browser:get-info',
 
   // Testing
   PROFILE_TEST: 'profile:test',

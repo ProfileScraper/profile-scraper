@@ -1,6 +1,6 @@
 import { SiteProfile, ProductData } from '../../shared/types';
 import { ImportResult, ValidationResult } from '../../shared/validation-types';
-import { SyncResult } from '../../shared/marketplace-types';
+import { SyncResult } from '../../shared/profileExplorer-types';
 
 export interface ProfileTestResult {
   success: boolean;
@@ -106,9 +106,18 @@ export interface ElectronAPI {
   validateProfileJSON: (json: string) => Promise<ValidationResult>;
   cloneProfile: (sourceId: string) => Promise<{ success: boolean; profileId?: string; error?: string }>;
 
-  // Marketplace operations
-  syncMarketplace: () => Promise<SyncResult>;
+  // Profile Explorer operations
+  syncProfileExplorer: () => Promise<SyncResult>;
   getPublicProfiles: () => Promise<SiteProfile[]>;
+
+  // GitHub authentication
+  githubAuthStart: () => Promise<{ success: boolean; user?: { login: string; name: string | null; avatar_url: string }; error?: string }>;
+  githubAuthStatus: () => Promise<{ authenticated: boolean; user?: { login: string; name: string | null; avatar_url: string } | null }>;
+  githubAuthLogout: () => Promise<{ success: boolean; error?: string }>;
+  githubAuthGetUser: () => Promise<{ login: string; name: string | null; avatar_url: string } | null>;
+
+  // GitHub publishing
+  githubPublishProfile: (data: { profile: SiteProfile; description: string; tags: string[] }) => Promise<{ success: boolean; prUrl?: string; error?: string }>;
 
   // Job operations
   getAllJobs: (filter?: { profileId?: string; status?: string }) => Promise<Job[]>;
@@ -123,6 +132,12 @@ export interface ElectronAPI {
   // Product logs
   getProductLogs: (productId: number) => Promise<ProductLog[]>;
   getJobLogs: (jobId: string) => Promise<JobLog[]>;
+
+  // Browser management
+  checkBrowsersInstalled: () => Promise<{ installed: boolean; info?: any; error?: string }>;
+  downloadBrowsers: () => Promise<{ success: boolean; error?: string }>;
+  onBrowserDownloadProgress: (callback: (message: string) => void) => (() => void);
+  getBrowserInfo: () => Promise<any>;
 
   // Testing
   testProfile: (profile: SiteProfile) => Promise<ProfileTestResult>;

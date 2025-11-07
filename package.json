@@ -1,17 +1,23 @@
 {
   "name": "profile-scraper",
-  "version": "1.0.0",
+  "version": "1.5.2",
   "description": "Profile-based web scraper with Electron and patchright",
   "main": "dist/main/main/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:main\"",
     "dev:renderer": "vite",
-    "dev:main": "wait-on http://localhost:5174 && tsc -p tsconfig.main.json && cross-env NODE_ENV=development electron .",
+    "dev:main": "wait-on http://localhost:5174 && tsc -p tsconfig.main.json && cross-env NODE_ENV=development electron . --require dotenv/config",
     "build": "npm run build:renderer && npm run build:main",
     "build:renderer": "vite build",
     "build:main": "tsc -p tsconfig.main.json",
     "test": "jest",
-    "package": "npm run build && electron-builder"
+    "package": "npm run build && electron-builder",
+    "package:mac": "npm run build && electron-builder --mac",
+    "package:mac:intel": "npm run build && electron-builder --mac --x64",
+    "package:mac:arm": "npm run build && electron-builder --mac --arm64",
+    "package:win": "npm run build && electron-builder --win",
+    "package:linux": "npm run build && electron-builder --linux",
+    "package:all": "npm run build && electron-builder -mwl"
   },
   "keywords": [
     "scraper",
@@ -21,7 +27,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@octokit/rest": "^22.0.1",
     "csv-writer": "^1.6.0",
+    "electron-store": "^11.0.2",
     "patchright": "^1.56.1",
     "react": "^19.2.0",
     "react-beautiful-dnd": "^13.1.1",
@@ -44,6 +52,7 @@
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
+    "dotenv": "^17.2.3",
     "electron": "^39.1.0",
     "electron-builder": "^26.0.12",
     "jest": "^30.2.0",

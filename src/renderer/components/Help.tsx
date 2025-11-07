@@ -1,6 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { BrowserDownloadDialog } from './BrowserDownloadDialog';
 
 export function Help() {
+  const [showBrowserDialog, setShowBrowserDialog] = useState(false);
+  const [browserInfo, setBrowserInfo] = useState<any>(null);
+  const [isCheckingBrowsers, setIsCheckingBrowsers] = useState(false);
+
+  const checkBrowserStatus = async () => {
+    setIsCheckingBrowsers(true);
+    try {
+      const result = await window.electronAPI.checkBrowsersInstalled();
+      const info = await window.electronAPI.getBrowserInfo();
+      setBrowserInfo({ ...result, ...info });
+    } catch (error) {
+      console.error('[Help] Failed to check browser status:', error);
+    } finally {
+      setIsCheckingBrowsers(false);
+    }
+  };
+
+  useEffect(() => {
+    checkBrowserStatus();
+  }, []);
+
+  const handleBrowserDownloadComplete = () => {
+    setShowBrowserDialog(false);
+    checkBrowserStatus(); // Refresh status
+  };
+
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Header */}
@@ -110,7 +137,38 @@ export function Help() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">2. Start a Scraping Job</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">2. Profile Explorer & Public Profiles</h2>
+              <p className="text-gray-700 mb-3">
+                Browse and use community-contributed profiles from the <strong>Profile Explorer</strong>:
+              </p>
+              <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+                <li><strong>Browse Public Profiles</strong> - Discover pre-configured profiles for popular e-commerce sites</li>
+                <li><strong>Add to Library</strong> - Click the hamburger menu on any profile and select "Add to Library"</li>
+                <li><strong>View in Scraping Profiles</strong> - Added profiles appear in your Scraping Profiles tab</li>
+                <li><strong>Clone to Edit</strong> - Create an editable copy of any public profile</li>
+                <li>
+                  <strong>Share Your Profiles</strong> - Publish your own profiles to help the community
+                  <ul className="list-circle list-inside ml-6 mt-1">
+                    <li>Login with GitHub (required for publishing)</li>
+                    <li>Click "Publish" on any of your profiles</li>
+                    <li>Add description and tags to help others find it</li>
+                    <li>Creates a pull request to the community repository</li>
+                  </ul>
+                </li>
+              </ul>
+
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mt-4">
+                <h3 className="font-bold text-blue-900 mb-2">About Public Profiles</h3>
+                <p className="text-sm text-gray-700">
+                  Public profiles are <strong>read-only</strong> and maintained by the community.
+                  They're synced from GitHub and regularly updated. If you need to customize a public
+                  profile, use <strong>Clone to Edit</strong> to create your own editable copy.
+                </p>
+              </div>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">3. Start a Scraping Job</h2>
               <ol className="list-decimal list-inside space-y-2 text-gray-700 ml-4">
                 <li>Go to <strong>Profiles</strong> and click <strong>Run</strong> on your profile</li>
                 <li className="ml-6">
@@ -134,7 +192,7 @@ export function Help() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">3. View & Export Data</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">4. View & Export Data</h2>
               <ol className="list-decimal list-inside space-y-2 text-gray-700 ml-4">
                 <li>Click <strong>View Data</strong> on any completed job</li>
                 <li>Browse scraped product data in a searchable table</li>
@@ -154,6 +212,9 @@ export function Help() {
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Features</h2>
               <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
                 <li>Profile Management - Create, edit, and organize scraping profiles</li>
+                <li>Profile Explorer - Browse and use community-contributed public profiles</li>
+                <li>GitHub Integration - Login with GitHub to publish and share profiles</li>
+                <li>Profile Library System - Add/remove public profiles from your library</li>
                 <li>Live Job Monitoring - Real-time progress tracking with phase updates</li>
                 <li>Product-Level Logging - Detailed logs for each scraped product</li>
                 <li>Concurrent Scraping - Configurable worker threads for parallel scraping</li>
@@ -163,6 +224,7 @@ export function Help() {
                 <li>Checkpoint System - Resumable scraping with automatic progress saving</li>
                 <li>Data Export - Export to CSV, JSON, or both formats</li>
                 <li>Job History - View all past scraping jobs</li>
+                <li>Import/Export Profiles - Share profiles as JSON files or URLs</li>
               </ul>
             </section>
 
@@ -178,6 +240,63 @@ export function Help() {
                 <li><code className="bg-gray-100 px-2 py-1 rounded text-sm">logs/scrape.log</code> - Application logs</li>
                 <li><code className="bg-gray-100 px-2 py-1 rounded text-sm">output/&#123;profileId&#125;/&#123;jobId&#125;/</code> - Job output and checkpoints</li>
               </ul>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">Browser Management</h2>
+              <p className="text-gray-700 mb-3">
+                ProfileScraper requires Chromium browser binaries for web scraping. These are downloaded
+                automatically on first run, but you can manage them manually here.
+              </p>
+
+              {browserInfo && (
+                <div className="bg-gray-50 border border-gray-200 rounded p-4 mb-4">
+                  <h3 className="font-bold text-gray-800 mb-2">Browser Status</h3>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Installed:</span>
+                      <span className={browserInfo.installed ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
+                        {browserInfo.installed ? '✓ Yes' : '✗ No'}
+                      </span>
+                    </div>
+                    {browserInfo.path && (
+                      <div className="flex items-start gap-2">
+                        <span className="font-medium">Path:</span>
+                        <code className="bg-white px-2 py-1 rounded text-xs break-all">{browserInfo.path}</code>
+                      </div>
+                    )}
+                    {browserInfo.architecture && (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Architecture:</span>
+                        <span>{browserInfo.architecture}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={checkBrowserStatus}
+                  disabled={isCheckingBrowsers}
+                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isCheckingBrowsers ? 'Checking...' : 'Check Status'}
+                </button>
+                <button
+                  onClick={() => setShowBrowserDialog(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Download Browsers
+                </button>
+              </div>
+
+              <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mt-4">
+                <p className="text-sm text-gray-700">
+                  <strong>Note:</strong> Browser downloads are architecture-specific (Intel x64 or Apple Silicon ARM64).
+                  The correct version for your Mac will be automatically selected during download.
+                </p>
+              </div>
             </section>
 
             <section className="mb-8">
@@ -197,11 +316,17 @@ export function Help() {
 
             <section>
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Version</h2>
-              <p className="text-gray-700">v1.0.0</p>
+              <p className="text-gray-700">v1.5.2</p>
             </section>
           </div>
         </div>
       </div>
+
+      <BrowserDownloadDialog
+        isOpen={showBrowserDialog}
+        onClose={() => setShowBrowserDialog(false)}
+        onComplete={handleBrowserDownloadComplete}
+      />
     </div>
   );
 }
