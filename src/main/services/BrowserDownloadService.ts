@@ -1,5 +1,5 @@
 import { app } from 'electron';
-import { execSync } from 'child_process';
+import { spawn } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import { logInfo, logError } from '../logger';
@@ -119,39 +119,78 @@ export class BrowserDownloadService {
       logInfo(`[BrowserDownload] CWD: ${process.cwd()}`);
       logInfo(`[BrowserDownload] App path: ${app.getAppPath()}`);
 
-      try {
-        const result = execSync(command, {
-          stdio: 'pipe',
+      // Parse command into executable and args
+      const commandParts = command.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
+      const executable = commandParts[0]?.replace(/"/g, '') || '';
+      const args = commandParts.slice(1).map(arg => arg.replace(/"/g, ''));
+
+      if (!executable) {
+        throw new Error('Failed to parse executable from command');
+      }
+
+      logInfo(`[BrowserDownload] Executable: ${executable}`);
+      logInfo(`[BrowserDownload] Args: ${JSON.stringify(args)}`);
+
+      // Use spawn for streaming output
+      await new Promise<void>((resolve, reject) => {
+        const child = spawn(executable, args, {
           env: {
             ...process.env,
             PLAYWRIGHT_BROWSERS_PATH: this.browsersPath,
           },
-          encoding: 'utf-8',
+          shell: false,
         });
 
-        logInfo(`[BrowserDownload] Command output: ${result}`);
-      } catch (execError: any) {
-        logError('[BrowserDownload] execSync error', execError);
+        let stdoutBuffer = '';
+        let stderrBuffer = '';
 
-        // Log detailed error information
-        if (execError.stdout) {
-          logInfo(`[BrowserDownload] stdout: ${execError.stdout}`);
-        }
-        if (execError.stderr) {
-          logError('[BrowserDownload] stderr: ' + execError.stderr, new Error(execError.stderr));
-        }
-        if (execError.message) {
-          logInfo(`[BrowserDownload] Error message: ${execError.message}`);
-        }
+        child.stdout.on('data', (data: Buffer) => {
+          const text = data.toString();
+          stdoutBuffer += text;
+          logInfo(`[BrowserDownload] stdout: ${text.trim()}`);
 
-        // Check if browser was actually downloaded despite the error
-        if (this.areBrowsersInstalled()) {
-          notify('Browsers downloaded successfully (ignored non-critical error)');
-          return;
-        }
+          // Send progress updates for non-empty lines
+          const trimmed = text.trim();
+          if (trimmed) {
+            notify(trimmed);
+          }
+        });
 
-        throw execError;
-      }
+        child.stderr.on('data', (data: Buffer) => {
+          const text = data.toString();
+          stderrBuffer += text;
+          logInfo(`[BrowserDownload] stderr: ${text.trim()}`);
+
+          // Also send stderr as progress (patchright may use stderr for progress)
+          const trimmed = text.trim();
+          if (trimmed) {
+            notify(trimmed);
+          }
+        });
+
+        child.on('error', (error: Error) => {
+          logError('[BrowserDownload] spawn error', error);
+          reject(new Error(`Failed to spawn process: ${error.message}`));
+        });
+
+        child.on('close', (code: number | null) => {
+          logInfo(`[BrowserDownload] Process exited with code: ${code}`);
+
+          if (code === 0) {
+            resolve();
+          } else {
+            // Check if browser was actually downloaded despite non-zero exit
+            if (this.areBrowsersInstalled()) {
+              logInfo('[BrowserDownload] Browsers installed despite non-zero exit code');
+              resolve();
+            } else {
+              const errorMsg = stderrBuffer || stdoutBuffer || `Process exited with code ${code}`;
+              logError('[BrowserDownload] Download failed', new Error(errorMsg));
+              reject(new Error(`Download failed: ${errorMsg}`));
+            }
+          }
+        });
+      });
 
       notify('Verifying installation...');
 

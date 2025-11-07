@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserDownloadDialog } from './BrowserDownloadDialog';
 
 export function Help() {
-  const [showBrowserDialog, setShowBrowserDialog] = useState(false);
   const [browserInfo, setBrowserInfo] = useState<any>(null);
   const [isCheckingBrowsers, setIsCheckingBrowsers] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<string>('');
+  const [downloadError, setDownloadError] = useState<string>('');
 
   const checkBrowserStatus = async () => {
     setIsCheckingBrowsers(true);
@@ -21,11 +22,35 @@ export function Help() {
 
   useEffect(() => {
     checkBrowserStatus();
+
+    // Listen for progress updates
+    const cleanup = window.electronAPI.onBrowserDownloadProgress((message: string) => {
+      console.log('[Help] Download progress:', message);
+      setDownloadProgress(message);
+    });
+
+    return cleanup;
   }, []);
 
-  const handleBrowserDownloadComplete = () => {
-    setShowBrowserDialog(false);
-    checkBrowserStatus(); // Refresh status
+  const handleDownloadBrowsers = async () => {
+    setIsDownloading(true);
+    setDownloadError('');
+    setDownloadProgress('Starting download...');
+
+    try {
+      await window.electronAPI.downloadBrowsers();
+      setDownloadProgress('Download complete! Checking installation...');
+      await checkBrowserStatus();
+      setDownloadProgress('Browsers installed successfully!');
+      setTimeout(() => {
+        setIsDownloading(false);
+        setDownloadProgress('');
+      }, 2000);
+    } catch (error) {
+      console.error('[Help] Download failed:', error);
+      setDownloadError(error instanceof Error ? error.message : String(error));
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -275,19 +300,44 @@ export function Help() {
                 </div>
               )}
 
-              <div className="flex gap-3">
+              {downloadProgress && (
+                <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    {isDownloading && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    )}
+                    <span className="text-sm font-medium text-blue-800">
+                      {isDownloading ? 'Downloading...' : 'Status'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700 font-mono whitespace-pre-wrap break-all">
+                    {downloadProgress}
+                  </p>
+                </div>
+              )}
+
+              {downloadError && (
+                <div className="bg-red-50 border border-red-200 rounded p-4 mb-4">
+                  <p className="text-sm text-red-800">
+                    <strong>Error:</strong> {downloadError}
+                  </p>
+                </div>
+              )}
+
+              <div className="flex gap-3 mb-4">
                 <button
                   onClick={checkBrowserStatus}
-                  disabled={isCheckingBrowsers}
+                  disabled={isCheckingBrowsers || isDownloading}
                   className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isCheckingBrowsers ? 'Checking...' : 'Check Status'}
                 </button>
                 <button
-                  onClick={() => setShowBrowserDialog(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  onClick={handleDownloadBrowsers}
+                  disabled={isDownloading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Download Browsers
+                  {isDownloading ? 'Downloading...' : 'Download Browsers'}
                 </button>
               </div>
 
@@ -321,12 +371,6 @@ export function Help() {
           </div>
         </div>
       </div>
-
-      <BrowserDownloadDialog
-        isOpen={showBrowserDialog}
-        onClose={() => setShowBrowserDialog(false)}
-        onComplete={handleBrowserDownloadComplete}
-      />
     </div>
   );
 }
