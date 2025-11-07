@@ -31,6 +31,7 @@ export function ProfileBuilder() {
     productPageActions,
     currentStep,
     isSaving,
+    isReadonly,
     setName,
     setCategoryUrl,
     setProductLinkSelector,
@@ -520,6 +521,15 @@ export function ProfileBuilder() {
     }
   };
 
+  const handleClone = async () => {
+    if (id) {
+      const result = await window.electronAPI.cloneProfile(id);
+      if (result.success) {
+        navigate(`/profiles/${result.profileId}/edit`);
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-3xl mx-auto">
@@ -535,6 +545,21 @@ export function ProfileBuilder() {
             {isEditMode ? 'Edit Profile' : 'Create New Profile'}
           </h1>
         </div>
+
+        {/* Read-only Banner */}
+        {isReadonly && (
+          <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-6">
+            <p className="text-yellow-800">
+              This is a public profile and cannot be edited.
+              <button
+                onClick={handleClone}
+                className="ml-2 underline font-semibold hover:text-yellow-900"
+              >
+                Clone it to make changes
+              </button>
+            </p>
+          </div>
+        )}
 
         {/* Step Indicator */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
@@ -1812,26 +1837,30 @@ export function ProfileBuilder() {
                 Back
               </button>
               <div className="flex gap-3">
-                <button
-                  onClick={handleTestProfile}
-                  disabled={isTesting}
-                  className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isTesting ? 'Testing...' : 'Quick Test (1 Page + 1 Product)'}
-                </button>
+                {!isReadonly && (
+                  <button
+                    onClick={handleTestProfile}
+                    disabled={isTesting}
+                    className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isTesting ? 'Testing...' : 'Quick Test (1 Page + 1 Product)'}
+                  </button>
+                )}
                 <button
                   onClick={() => navigate('/profiles')}
                   className="px-6 py-2 text-gray-600 hover:text-gray-800 font-medium"
                 >
                   Cancel
                 </button>
-                <button
-                  onClick={handleSaveProfile}
-                  disabled={isSaving}
-                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSaving ? 'Saving...' : isEditMode ? 'Update Profile' : 'Save Profile'}
-                </button>
+                {!isReadonly && (
+                  <button
+                    onClick={handleSaveProfile}
+                    disabled={isSaving}
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSaving ? 'Saving...' : isEditMode ? 'Update Profile' : 'Save Profile'}
+                  </button>
+                )}
               </div>
             </div>
           </div>
