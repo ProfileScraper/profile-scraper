@@ -21,6 +21,15 @@ export interface ProfileRow {
   checkpoint_interval: number;
   headless: number;
   overwrite_existing: number;
+  is_public: number;
+  is_readonly: number;
+  source_profile_id: string | null;
+  source_url: string | null;
+  author: string | null;
+  description: string | null;
+  tags: string | null;
+  version: string | null;
+  last_synced: number | null;
 }
 
 export class ProfileRepository {
@@ -35,8 +44,11 @@ export class ProfileRepository {
         id, name, created_at, updated_at, category_url,
         pre_actions, pagination, product_link_selector, prepend_domain,
         product_page_actions, field_selectors, concurrency,
-        delay_min, delay_max, retries, checkpoint_interval, headless, overwrite_existing
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        delay_min, delay_max, retries, checkpoint_interval,
+        headless, overwrite_existing,
+        is_public, is_readonly, source_profile_id, source_url,
+        author, description, tags, version, last_synced
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -57,7 +69,16 @@ export class ProfileRepository {
       profile.retries,
       profile.checkpointInterval,
       profile.headless !== false ? 1 : 0, // Default to headless (1) unless explicitly false
-      profile.overwriteExisting ? 1 : 0 // Default to false (0)
+      profile.overwriteExisting ? 1 : 0, // Default to false (0)
+      profile.isPublic ? 1 : 0,
+      profile.isReadonly ? 1 : 0,
+      profile.sourceProfileId || null,
+      profile.sourceUrl || null,
+      profile.author || null,
+      profile.description || null,
+      profile.tags ? JSON.stringify(profile.tags) : null,
+      profile.version || null,
+      profile.lastSynced || null
     );
 
     return id;
@@ -79,14 +100,23 @@ export class ProfileRepository {
   }
 
   update(id: string, profile: SiteProfile): void {
+    // Check if profile is read-only
+    const existing = this.getById(id);
+    if (existing?.isReadonly) {
+      throw new Error('Cannot update read-only profile. Clone it first.');
+    }
+
     const now = Date.now();
 
     const stmt = this.db.prepare(`
       UPDATE profiles SET
         name = ?, updated_at = ?, category_url = ?,
-        pre_actions = ?, pagination = ?, product_link_selector = ?, prepend_domain = ?,
-        product_page_actions = ?, field_selectors = ?, concurrency = ?,
-        delay_min = ?, delay_max = ?, retries = ?, checkpoint_interval = ?, headless = ?, overwrite_existing = ?
+        pre_actions = ?, pagination = ?, product_link_selector = ?,
+        prepend_domain = ?, product_page_actions = ?, field_selectors = ?,
+        concurrency = ?, delay_min = ?, delay_max = ?,
+        retries = ?, checkpoint_interval = ?, headless = ?,
+        overwrite_existing = ?,
+        author = ?, description = ?, tags = ?, version = ?
       WHERE id = ?
     `);
 
@@ -107,6 +137,10 @@ export class ProfileRepository {
       profile.checkpointInterval,
       profile.headless !== false ? 1 : 0,
       profile.overwriteExisting ? 1 : 0,
+      profile.author || null,
+      profile.description || null,
+      profile.tags ? JSON.stringify(profile.tags) : null,
+      profile.version || null,
       id
     );
   }
@@ -143,7 +177,16 @@ export class ProfileRepository {
         retries: row.retries,
         checkpointInterval: row.checkpoint_interval,
         headless: row.headless === 1,
-        overwriteExisting: row.overwrite_existing === 1
+        overwriteExisting: row.overwrite_existing === 1,
+        isPublic: Boolean(row.is_public),
+        isReadonly: Boolean(row.is_readonly),
+        sourceProfileId: row.source_profile_id || undefined,
+        sourceUrl: row.source_url || undefined,
+        author: row.author || undefined,
+        description: row.description || undefined,
+        tags: row.tags ? JSON.parse(row.tags) : undefined,
+        version: row.version || undefined,
+        lastSynced: row.last_synced || undefined
       };
     } catch (error) {
       throw new Error(`Failed to parse profile data for ID ${row.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
