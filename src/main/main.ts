@@ -62,8 +62,18 @@ async function createWindow(): Promise<void> {
 
     // Set up browser path for bundled browsers
     console.log('[Main] Setting up browser path...');
-    process.env.PLAYWRIGHT_BROWSERS_PATH = path.join(app.getPath('userData'), 'browsers');
-    console.log('[Main] PLAYWRIGHT_BROWSERS_PATH set to:', process.env.PLAYWRIGHT_BROWSERS_PATH);
+
+    // In production, browsers are bundled in app.asar.unpacked/browsers
+    // In development, browsers are in node_modules (installed automatically)
+    if (app.isPackaged) {
+      // Production: use bundled browsers
+      const browsersPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'browsers');
+      process.env.PLAYWRIGHT_BROWSERS_PATH = browsersPath;
+      console.log('[Main] Using bundled browsers at:', browsersPath);
+    } else {
+      // Development: use default playwright cache
+      console.log('[Main] Development mode - using default playwright browser cache');
+    }
 
   const preloadPath = path.join(__dirname, 'preload.js');
   console.log('[Main] Creating window with preload path:', preloadPath);
