@@ -79,13 +79,20 @@ export class BrowserDownloadService {
       notify('This may take a few minutes (120-150 MB)...');
 
       // Use patchright's programmatic API
+      // Launching a browser will automatically download it if not present
       const { chromium } = require('patchright');
 
-      // Install chromium browser
       notify('Starting browser installation...');
 
-      // The _install method downloads the browser if not present
-      await chromium._install();
+      // Launch browser to trigger download, then close it
+      const browser = await chromium.launch({
+        headless: true,
+      });
+
+      notify('Browser downloaded successfully, verifying...');
+
+      // Close the browser immediately
+      await browser.close();
 
       // Restore original browsers path
       if (originalBrowsersPath) {
