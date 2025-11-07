@@ -67,12 +67,6 @@ export const IPC_CHANNELS = {
   LOGS_GET_BY_PRODUCT_ID: 'logs:get-by-product-id',
   LOGS_GET_BY_JOB_ID: 'logs:get-by-job-id',
 
-  // Browser management
-  BROWSER_CHECK_INSTALLED: 'browser:check-installed',
-  BROWSER_DOWNLOAD: 'browser:download',
-  BROWSER_DOWNLOAD_PROGRESS: 'browser:download-progress',
-  BROWSER_GET_INFO: 'browser:get-info',
-
   // Testing
   PROFILE_TEST: 'profile:test',
 

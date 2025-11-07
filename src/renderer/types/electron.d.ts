@@ -133,12 +133,6 @@ export interface ElectronAPI {
   getProductLogs: (productId: number) => Promise<ProductLog[]>;
   getJobLogs: (jobId: string) => Promise<JobLog[]>;
 
-  // Browser management
-  checkBrowsersInstalled: () => Promise<{ installed: boolean; info?: any; error?: string }>;
-  downloadBrowsers: () => Promise<{ success: boolean; error?: string }>;
-  onBrowserDownloadProgress: (callback: (message: string) => void) => (() => void);
-  getBrowserInfo: () => Promise<any>;
-
   // Testing
   testProfile: (profile: SiteProfile) => Promise<ProfileTestResult>;
 

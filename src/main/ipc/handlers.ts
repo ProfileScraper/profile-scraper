@@ -60,15 +60,6 @@ export function setupIpcHandlers(mainWindow: Electron.BrowserWindow): void {
     console.log('[Main Process] SCRAPE_START handler called with profile ID:', profileId);
 
     try {
-      // Check if browsers are installed first
-      const { BrowserDownloadService } = require('../services/BrowserDownloadService');
-      const browserService = new BrowserDownloadService();
-
-      if (!browserService.areBrowsersInstalled()) {
-        console.error('[Main Process] Browsers not installed - scrape cannot start');
-        throw new Error('Browsers not installed. Please download browsers first.');
-      }
-
       // Get database and repositories
       const db = getDatabase();
       const profileRepo = new ProfileRepository(db);

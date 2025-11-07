@@ -49,10 +49,6 @@ const IPC_CHANNELS = {
   INSPECTOR_OPEN: 'inspector:open',
   INSPECTOR_CLOSE: 'inspector:close',
   INSPECTOR_SELECT: 'inspector:select',
-  BROWSER_CHECK_INSTALLED: 'browser:check-installed',
-  BROWSER_DOWNLOAD: 'browser:download',
-  BROWSER_DOWNLOAD_PROGRESS: 'browser:download-progress',
-  BROWSER_GET_INFO: 'browser:get-info',
 };
 
 console.log('[Preload] Preload script starting...');
@@ -123,16 +119,6 @@ try {
   // Product logs
   getProductLogs: (productId: number) => ipcRenderer.invoke(IPC_CHANNELS.LOGS_GET_BY_PRODUCT_ID, productId),
   getJobLogs: (jobId: string) => ipcRenderer.invoke(IPC_CHANNELS.LOGS_GET_BY_JOB_ID, jobId),
-
-  // Browser management
-  checkBrowsersInstalled: () => ipcRenderer.invoke(IPC_CHANNELS.BROWSER_CHECK_INSTALLED),
-  downloadBrowsers: () => ipcRenderer.invoke(IPC_CHANNELS.BROWSER_DOWNLOAD),
-  onBrowserDownloadProgress: (callback: (message: string) => void) => {
-    const handler = (_event: any, message: string) => callback(message);
-    ipcRenderer.on(IPC_CHANNELS.BROWSER_DOWNLOAD_PROGRESS, handler);
-    return () => ipcRenderer.removeListener(IPC_CHANNELS.BROWSER_DOWNLOAD_PROGRESS, handler);
-  },
-  getBrowserInfo: () => ipcRenderer.invoke(IPC_CHANNELS.BROWSER_GET_INFO),
 
   // Testing
   testProfile: (profile: SiteProfile) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_TEST, profile),

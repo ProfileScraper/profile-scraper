@@ -37,7 +37,6 @@ import { setupProfileExplorerHandlers } from './ipc/profileExplorerHandlers';
 import { setupGitHubHandlers } from './ipc/githubHandlers';
 import { initDatabase } from './database/db';
 import { migrateFromJSON } from './database/migration';
-import { BrowserDownloadService } from './services/BrowserDownloadService';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -61,15 +60,10 @@ async function createWindow(): Promise<void> {
     await migrateFromJSON();
     console.log('[Main] Migration complete');
 
-    // Set up browser path for first-run download
+    // Set up browser path for bundled browsers
     console.log('[Main] Setting up browser path...');
-    const browserService = new BrowserDownloadService();
-    const browsersPath = browserService.getBrowsersPath();
-    process.env.PLAYWRIGHT_BROWSERS_PATH = browsersPath;
-    console.log('[Main] PLAYWRIGHT_BROWSERS_PATH set to:', browsersPath);
-
-    const browserInfo = browserService.getBrowserInfo();
-    console.log('[Main] Browser info:', browserInfo);
+    process.env.PLAYWRIGHT_BROWSERS_PATH = path.join(app.getPath('userData'), 'browsers');
+    console.log('[Main] PLAYWRIGHT_BROWSERS_PATH set to:', process.env.PLAYWRIGHT_BROWSERS_PATH);
 
   const preloadPath = path.join(__dirname, 'preload.js');
   console.log('[Main] Creating window with preload path:', preloadPath);
@@ -111,10 +105,6 @@ async function createWindow(): Promise<void> {
   setupLogHandlers();
   setupProfileExplorerHandlers();
   setupGitHubHandlers(mainWindow);
-
-  // Import and setup browser handlers
-  const { setupBrowserHandlers } = require('./ipc/browserHandlers');
-  setupBrowserHandlers();
 
   console.log('[Main] IPC handlers configured');
 
