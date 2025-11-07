@@ -1,5 +1,6 @@
 import { SiteProfile, ProductData } from '../../shared/types';
 import { ImportResult, ValidationResult } from '../../shared/validation-types';
+import { SyncResult } from '../../shared/marketplace-types';
 
 export interface ProfileTestResult {
   success: boolean;
@@ -104,6 +105,10 @@ export interface ElectronAPI {
   importProfileFromURL: (url: string) => Promise<ImportResult>;
   validateProfileJSON: (json: string) => Promise<ValidationResult>;
   cloneProfile: (sourceId: string) => Promise<{ success: boolean; profileId?: string; error?: string }>;
+
+  // Marketplace operations
+  syncMarketplace: () => Promise<SyncResult>;
+  getPublicProfiles: () => Promise<SiteProfile[]>;
 
   // Job operations
   getAllJobs: (filter?: { profileId?: string; status?: string }) => Promise<Job[]>;

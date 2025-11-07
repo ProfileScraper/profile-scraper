@@ -28,6 +28,10 @@ export const IPC_CHANNELS = {
   PROFILE_VALIDATE_JSON: 'profile:validate-json',
   PROFILE_CLONE: 'profile:clone',
 
+  // Marketplace operations
+  MARKETPLACE_SYNC: 'marketplace:sync',
+  MARKETPLACE_GET_ALL: 'marketplace:get-all',
+
   // Job operations
   JOB_GET_ALL: 'job:get-all',
   JOB_GET: 'job:get',

@@ -26,6 +26,8 @@ const IPC_CHANNELS = {
   PROFILE_IMPORT_URL: 'profile:import-url',
   PROFILE_VALIDATE_JSON: 'profile:validate-json',
   PROFILE_CLONE: 'profile:clone',
+  MARKETPLACE_SYNC: 'marketplace:sync',
+  MARKETPLACE_GET_ALL: 'marketplace:get-all',
   JOB_GET_ALL: 'job:get-all',
   JOB_GET: 'job:get',
   JOB_GET_ERRORS: 'job:get-errors',
@@ -81,6 +83,10 @@ try {
   importProfileFromURL: (url: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_IMPORT_URL, url),
   validateProfileJSON: (json: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_VALIDATE_JSON, json),
   cloneProfile: (sourceId: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_CLONE, sourceId),
+
+  // Marketplace operations
+  syncMarketplace: () => ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_SYNC),
+  getPublicProfiles: () => ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_GET_ALL),
 
   // Job operations
   getAllJobs: (filter?: { profileId?: string; status?: string }) => ipcRenderer.invoke(IPC_CHANNELS.JOB_GET_ALL, filter),

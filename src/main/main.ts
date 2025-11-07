@@ -7,6 +7,7 @@ import { setupTestHandlers } from './ipc/testHandlers';
 import { setupInspectorHandlers } from './ipc/inspectorHandlers';
 import { setupDataHandlers } from './ipc/dataHandlers';
 import { setupLogHandlers } from './ipc/logHandlers';
+import { setupMarketplaceHandlers } from './ipc/marketplaceHandlers';
 import { initDatabase } from './database/db';
 import { migrateFromJSON } from './database/migration';
 
@@ -62,6 +63,7 @@ async function createWindow(): Promise<void> {
   setupInspectorHandlers(mainWindow);
   setupDataHandlers();
   setupLogHandlers();
+  setupMarketplaceHandlers();
 
     mainWindow.on('closed', () => {
       mainWindow = null;
