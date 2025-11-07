@@ -44,6 +44,23 @@ function runMigrations(db: DatabaseSync): void {
     db.exec('ALTER TABLE jobs ADD COLUMN phase TEXT');
     console.log('[Database] Migration complete: phase column added');
   }
+
+  // Migration 5: Add profile sharing metadata fields
+  if (!columnNames.has('is_public')) {
+    console.log('[Database] Running migration: Adding profile sharing metadata fields');
+    db.exec(`
+      ALTER TABLE profiles ADD COLUMN is_public INTEGER DEFAULT 0;
+      ALTER TABLE profiles ADD COLUMN is_readonly INTEGER DEFAULT 0;
+      ALTER TABLE profiles ADD COLUMN source_profile_id TEXT DEFAULT NULL;
+      ALTER TABLE profiles ADD COLUMN source_url TEXT DEFAULT NULL;
+      ALTER TABLE profiles ADD COLUMN author TEXT DEFAULT NULL;
+      ALTER TABLE profiles ADD COLUMN description TEXT DEFAULT NULL;
+      ALTER TABLE profiles ADD COLUMN tags TEXT DEFAULT NULL;
+      ALTER TABLE profiles ADD COLUMN version TEXT DEFAULT NULL;
+      ALTER TABLE profiles ADD COLUMN last_synced INTEGER DEFAULT NULL;
+    `);
+    console.log('[Database] Migration complete: profile sharing metadata fields added');
+  }
 }
 
 export function initDatabase(dataPath?: string): DatabaseSync {
