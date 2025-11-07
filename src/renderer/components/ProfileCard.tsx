@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ExportWarningDialog } from './ExportWarningDialog';
 
 interface ProfileCardProps {
   id: string;
@@ -13,6 +14,15 @@ interface ProfileCardProps {
 export function ProfileCard({ id, name, categoryUrl, createdAt, onDelete, onRun }: ProfileCardProps) {
   const navigate = useNavigate();
   const createdDate = new Date(createdAt).toLocaleDateString();
+  const [showExportDialog, setShowExportDialog] = useState(false);
+
+  const handleExport = async () => {
+    const result = await window.electronAPI.exportProfile(id);
+    if (result.success) {
+      console.log('Exported to:', result.filePath);
+    }
+    setShowExportDialog(false);
+  };
 
   return (
     <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
@@ -41,6 +51,12 @@ export function ProfileCard({ id, name, categoryUrl, createdAt, onDelete, onRun 
           Edit
         </button>
         <button
+          onClick={() => setShowExportDialog(true)}
+          className="bg-green-100 text-green-600 px-4 py-2 rounded hover:bg-green-200 transition-colors text-sm font-medium"
+        >
+          Export
+        </button>
+        <button
           onClick={() => {
             if (confirm(`Delete profile "${name}"?`)) {
               onDelete(id);
@@ -51,6 +67,15 @@ export function ProfileCard({ id, name, categoryUrl, createdAt, onDelete, onRun 
           Delete
         </button>
       </div>
+
+      {/* Export Warning Dialog */}
+      {showExportDialog && (
+        <ExportWarningDialog
+          profileName={name}
+          onConfirm={handleExport}
+          onCancel={() => setShowExportDialog(false)}
+        />
+      )}
     </div>
   );
 }

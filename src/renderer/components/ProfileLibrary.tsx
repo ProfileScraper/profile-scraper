@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ProfileCard } from './ProfileCard';
+import { ImportDialog } from './ImportDialog';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { groupProfilesByDomain, sortDomains } from '../utils/profileGrouping';
 
@@ -25,6 +26,7 @@ export function ProfileLibrary() {
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [viewMode, setViewMode] = useLocalStorage<ViewMode>('profileViewMode', 'grid');
   const [collapsedDomains, setCollapsedDomains] = useLocalStorage<string[]>('collapsedDomains', []);
+  const [showImportDialog, setShowImportDialog] = useState(false);
 
   const loadProfiles = async () => {
     setLoading(true);
@@ -175,6 +177,14 @@ export function ProfileLibrary() {
       <div className="h-[82px] px-6 border-b border-gray-400 flex justify-between items-center shrink-0">
         <h1 className="text-xl font-bold text-gray-800">Scraping Profiles</h1>
         <div className="flex gap-3 items-center">
+          {/* Import Button */}
+          <button
+            onClick={() => setShowImportDialog(true)}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
+          >
+            Import Profile
+          </button>
+
           {/* View Toggle */}
           <div className="flex gap-2 border border-gray-300 rounded-lg p-1">
             <button
@@ -354,6 +364,14 @@ export function ProfileLibrary() {
         </div>
       )}
       </div>
+
+      {/* Import Dialog */}
+      {showImportDialog && (
+        <ImportDialog
+          onClose={() => setShowImportDialog(false)}
+          onImportSuccess={() => loadProfiles()}
+        />
+      )}
     </div>
   );
 }
