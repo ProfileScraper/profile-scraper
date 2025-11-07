@@ -1,5 +1,4 @@
 import { app } from 'electron';
-import { spawn } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import { logInfo, logError } from '../logger';
@@ -51,7 +50,7 @@ export class BrowserDownloadService {
   }
 
   /**
-   * Download and install browsers
+   * Download and install browsers using patchright's programmatic API
    */
   async downloadBrowsers(onProgress?: (message: string) => void): Promise<void> {
     logInfo('[BrowserDownload] Starting browser download...');
@@ -72,125 +71,28 @@ export class BrowserDownloadService {
       }
 
       // Set PLAYWRIGHT_BROWSERS_PATH to our custom location
+      const originalBrowsersPath = process.env.PLAYWRIGHT_BROWSERS_PATH;
       process.env.PLAYWRIGHT_BROWSERS_PATH = this.browsersPath;
       notify('Set browsers path');
 
-      // Run patchright install chromium
       notify('Downloading Chromium browser...');
-      notify('This may take a few minutes...');
+      notify('This may take a few minutes (120-150 MB)...');
 
-      // Determine the correct path to patchright
-      let command: string;
-      if (app.isPackaged) {
-        // In packaged app, patchright is unpacked to app.asar.unpacked
-        const appPath = app.getAppPath();
+      // Use patchright's programmatic API
+      const { chromium } = require('patchright');
 
-        // Try unpacked location first (app.asar.unpacked/node_modules)
-        const unpackedPath = appPath.replace('app.asar', 'app.asar.unpacked');
-        const pathrightCli = path.join(unpackedPath, 'node_modules', 'patchright', 'cli.js');
+      // Install chromium browser
+      notify('Starting browser installation...');
 
-        // Also try regular asar location as fallback
-        const pathrightCliAsar = path.join(appPath, 'node_modules', 'patchright', 'cli.js');
+      // The _install method downloads the browser if not present
+      await chromium._install();
 
-        // Use process.execPath which points to the Electron executable
-        // Electron's node runtime can execute JavaScript files
-        const nodeExecutable = process.execPath;
-
-        logInfo(`[BrowserDownload] Checking for patchright cli at: ${pathrightCli}`);
-        logInfo(`[BrowserDownload] CLI exists: ${fs.existsSync(pathrightCli)}`);
-        logInfo(`[BrowserDownload] Node executable: ${nodeExecutable}`);
-
-        if (fs.existsSync(pathrightCli)) {
-          // Call cli.js directly with Electron's Node runtime
-          command = `"${nodeExecutable}" "${pathrightCli}" install chromium`;
-        } else if (fs.existsSync(pathrightCliAsar)) {
-          command = `"${nodeExecutable}" "${pathrightCliAsar}" install chromium`;
-        } else {
-          // Fallback: try using npx from system PATH
-          logInfo('[BrowserDownload] patchright cli not found, falling back to npx');
-          command = 'npx patchright install chromium';
-        }
+      // Restore original browsers path
+      if (originalBrowsersPath) {
+        process.env.PLAYWRIGHT_BROWSERS_PATH = originalBrowsersPath;
       } else {
-        // In development, use npx
-        command = 'npx patchright install chromium';
+        delete process.env.PLAYWRIGHT_BROWSERS_PATH;
       }
-
-      logInfo(`[BrowserDownload] Running command: ${command}`);
-      logInfo(`[BrowserDownload] CWD: ${process.cwd()}`);
-      logInfo(`[BrowserDownload] App path: ${app.getAppPath()}`);
-
-      // Parse command into executable and args
-      const commandParts = command.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
-      const executable = commandParts[0]?.replace(/"/g, '') || '';
-      const args = commandParts.slice(1).map(arg => arg.replace(/"/g, ''));
-
-      if (!executable) {
-        throw new Error('Failed to parse executable from command');
-      }
-
-      logInfo(`[BrowserDownload] Executable: ${executable}`);
-      logInfo(`[BrowserDownload] Args: ${JSON.stringify(args)}`);
-
-      // Use spawn for streaming output
-      await new Promise<void>((resolve, reject) => {
-        const child = spawn(executable, args, {
-          env: {
-            ...process.env,
-            PLAYWRIGHT_BROWSERS_PATH: this.browsersPath,
-          },
-          shell: false,
-        });
-
-        let stdoutBuffer = '';
-        let stderrBuffer = '';
-
-        child.stdout.on('data', (data: Buffer) => {
-          const text = data.toString();
-          stdoutBuffer += text;
-          logInfo(`[BrowserDownload] stdout: ${text.trim()}`);
-
-          // Send progress updates for non-empty lines
-          const trimmed = text.trim();
-          if (trimmed) {
-            notify(trimmed);
-          }
-        });
-
-        child.stderr.on('data', (data: Buffer) => {
-          const text = data.toString();
-          stderrBuffer += text;
-          logInfo(`[BrowserDownload] stderr: ${text.trim()}`);
-
-          // Also send stderr as progress (patchright may use stderr for progress)
-          const trimmed = text.trim();
-          if (trimmed) {
-            notify(trimmed);
-          }
-        });
-
-        child.on('error', (error: Error) => {
-          logError('[BrowserDownload] spawn error', error);
-          reject(new Error(`Failed to spawn process: ${error.message}`));
-        });
-
-        child.on('close', (code: number | null) => {
-          logInfo(`[BrowserDownload] Process exited with code: ${code}`);
-
-          if (code === 0) {
-            resolve();
-          } else {
-            // Check if browser was actually downloaded despite non-zero exit
-            if (this.areBrowsersInstalled()) {
-              logInfo('[BrowserDownload] Browsers installed despite non-zero exit code');
-              resolve();
-            } else {
-              const errorMsg = stderrBuffer || stdoutBuffer || `Process exited with code ${code}`;
-              logError('[BrowserDownload] Download failed', new Error(errorMsg));
-              reject(new Error(`Download failed: ${errorMsg}`));
-            }
-          }
-        });
-      });
 
       notify('Verifying installation...');
 
