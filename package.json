@@ -13,8 +13,8 @@
     "test": "jest",
     "package": "npm run build && electron-builder",
     "package:mac": "npm run build && electron-builder --mac",
-    "package:mac:intel": "npm run build && electron-builder --mac --x64",
-    "package:mac:arm": "npm run build && electron-builder --mac --arm64",
+    "package:mac:intel": "node scripts/install-browsers-darwin-x64.js && npm run build && electron-builder --mac --x64",
+    "package:mac:arm": "node scripts/install-browsers-darwin-arm64.js && npm run build && electron-builder --mac --arm64",
     "package:win": "npm run build && electron-builder --win",
     "package:linux": "npm run build && electron-builder --linux",
     "package:all": "npm run build && electron-builder -mwl"
