@@ -42,11 +42,33 @@ Start the development server:
 npm run dev
 ```
 
-Build for production:
+Browsers are automatically downloaded to the default playwright cache on first run.
+
+## Building for Distribution
+
+ProfileScraper bundles Chromium browsers (~150MB) during the build process. Separate DMGs are created for Intel and ARM architectures.
+
+### macOS
+
+Build architecture-specific DMGs:
 
 ```bash
-npm run build
-npm run package  # Creates DMG in release/
+# ARM (Apple Silicon) - run on ARM Mac
+npm run package:mac:arm
+
+# Intel (x64) - run on Intel Mac
+npm run package:mac:intel
+```
+
+**Output:** `release/ProfileScraper-<version>-<arch>.dmg`
+
+**Note:** You must build on the target architecture. ARM DMGs must be built on ARM Macs, Intel DMGs on Intel Macs. The first build will download browsers (~150MB) which takes 2-3 minutes.
+
+### Windows & Linux
+
+```bash
+npm run package:win   # Windows installer
+npm run package:linux # Linux AppImage and deb
 ```
 
 ## Usage
