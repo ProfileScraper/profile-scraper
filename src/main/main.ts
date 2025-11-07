@@ -63,11 +63,11 @@ async function createWindow(): Promise<void> {
     // Set up browser path for bundled browsers
     console.log('[Main] Setting up browser path...');
 
-    // In production, browsers are bundled in app.asar.unpacked/browsers
+    // In production, browsers are bundled in Resources/browsers (via extraResources)
     // In development, browsers are in node_modules (installed automatically)
     if (app.isPackaged) {
       // Production: use bundled browsers
-      const browsersPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'browsers');
+      const browsersPath = path.join(process.resourcesPath, 'browsers');
       process.env.PLAYWRIGHT_BROWSERS_PATH = browsersPath;
       console.log('[Main] Using bundled browsers at:', browsersPath);
     } else {

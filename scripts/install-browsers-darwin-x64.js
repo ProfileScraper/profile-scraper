@@ -8,6 +8,7 @@ console.log('[Build] Installing Intel x64 browsers...');
 
 // Set browser installation path
 const browsersPath = path.join(__dirname, '..', 'playwright-browsers-x64');
+const targetPath = path.join(__dirname, '..', 'browsers');
 
 // Ensure directory exists
 if (!fs.existsSync(browsersPath)) {
@@ -27,6 +28,14 @@ try {
 
   console.log('[Build] Intel browsers installed successfully');
   console.log(`[Build] Location: ${browsersPath}`);
+
+  // Copy to browsers directory for electron-builder
+  console.log('[Build] Copying browsers to target directory...');
+  if (fs.existsSync(targetPath)) {
+    execSync(`rm -rf "${targetPath}"`, { stdio: 'inherit' });
+  }
+  execSync(`cp -R "${browsersPath}" "${targetPath}"`, { stdio: 'inherit' });
+  console.log(`[Build] Browsers copied to: ${targetPath}`);
 } catch (error) {
   console.error('[Build] Failed to install Intel browsers:', error.message);
   process.exit(1);

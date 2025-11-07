@@ -6,13 +6,13 @@ files:
   - dist/**/*
   - node_modules/**/*
   - package.json
-  - from: playwright-browsers-${arch}
+extraResources:
+  - from: browsers
     to: browsers
     filter:
       - "**/*"
 asarUnpack:
   - node_modules/patchright/**/*
-  - browsers/**/*
 mac:
   target:
     - target: dmg
