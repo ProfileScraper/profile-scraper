@@ -233,7 +233,7 @@ export function Help() {
 
             <section>
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Version</h2>
-              <p className="text-gray-700">v1.5.2</p>
+              <p className="text-gray-700">v{window.electronAPI.getVersion()}</p>
             </section>
           </div>
         </div>

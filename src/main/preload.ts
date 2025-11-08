@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { SiteProfile } from '../shared/types';
+import packageJson from '../../package.json';
 
 // Inline IPC channel constants to avoid module resolution issues in sandboxed preload
 const IPC_CHANNELS = {
@@ -55,6 +56,9 @@ console.log('[Preload] Preload script starting...');
 
 try {
   contextBridge.exposeInMainWorld('electronAPI', {
+  // App info
+  getVersion: () => packageJson.version,
+
   // Config
   loadConfig: () => ipcRenderer.invoke(IPC_CHANNELS.CONFIG_LOAD),
   saveConfig: (config: any) => ipcRenderer.invoke(IPC_CHANNELS.CONFIG_SAVE, config),

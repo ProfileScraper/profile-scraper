@@ -19,6 +19,9 @@ mac:
   category: public.app-category.utilities
   icon: assets/icon.icns
   artifactName: ${productName}-${version}-${arch}.${ext}
+  identity: null
+  signIgnore:
+    - "**/*"
 win:
   target:
     - target: nsis

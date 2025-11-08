@@ -188,7 +188,7 @@ export function Sidebar() {
         )}
 
         <div className="px-4 pb-2 text-xs text-gray-500 text-center">
-          v1.5.2
+          v{window.electronAPI.getVersion()}
         </div>
       </div>
     </aside>
