@@ -18,7 +18,16 @@ export const SCHEMA = {
       retries INTEGER DEFAULT 3,
       checkpoint_interval INTEGER DEFAULT 10,
       headless INTEGER DEFAULT 1,
-      overwrite_existing INTEGER DEFAULT 0
+      overwrite_existing INTEGER DEFAULT 0,
+      is_public INTEGER DEFAULT 0,
+      is_readonly INTEGER DEFAULT 0,
+      source_profile_id TEXT DEFAULT NULL,
+      source_url TEXT DEFAULT NULL,
+      author TEXT DEFAULT NULL,
+      description TEXT DEFAULT NULL,
+      tags TEXT DEFAULT NULL,
+      version TEXT DEFAULT NULL,
+      last_synced INTEGER DEFAULT NULL
     )
   `,
   JOBS: `

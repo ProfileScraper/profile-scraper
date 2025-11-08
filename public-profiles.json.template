@@ -1,0 +1,59 @@
+{
+  "version": "1.0.0",
+  "updated_at": 1730937600000,
+  "profiles": [
+    {
+      "id": "example-profile-001",
+      "name": "Example Store - Electronics",
+      "description": "Example profile for scraping electronics from example.com",
+      "author": "ProfileScraper Community",
+      "tags": ["e-commerce", "electronics"],
+      "categoryUrl": "https://example.com/electronics",
+      "productLinkSelector": "a.product-card",
+      "prependDomain": false,
+      "fieldSelectors": {
+        "title": "h1.product-title",
+        "price": ".price-current",
+        "description": ".product-description",
+        "image": {
+          "selector": "img.product-image",
+          "attribute": "src"
+        },
+        "sku": {
+          "selector": "[data-sku]",
+          "attribute": "data-sku"
+        }
+      },
+      "pagination": {
+        "type": "button",
+        "selector": ".pagination-next",
+        "maxPages": 5
+      },
+      "preActions": [
+        {
+          "type": "waitForSelector",
+          "selector": ".product-card",
+          "timeout": 5000
+        }
+      ],
+      "productPageActions": [
+        {
+          "type": "waitForSelector",
+          "selector": ".product-title",
+          "timeout": 5000
+        }
+      ],
+      "concurrency": 3,
+      "delayRange": [2000, 4000],
+      "retries": 3,
+      "checkpointInterval": 10,
+      "headless": true,
+      "overwriteExisting": false,
+      "isPublic": true,
+      "isReadonly": true,
+      "version": "1.0.0",
+      "created_at": 1730937600000,
+      "updated_at": 1730937600000
+    }
+  ]
+}

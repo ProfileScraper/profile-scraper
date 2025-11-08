@@ -55,34 +55,56 @@ export class ScrapeOrchestrator extends EventEmitter {
       const headless = this.profile.headless !== false; // Default to true
       logInfo(`[Orchestrator] Profile headless setting: ${this.profile.headless}, computed: ${headless}`);
 
-      // Launch with enhanced stealth options to avoid bot detection
-      this.browser = await chromium.launch({
-        headless,
-        args: [
-          '--disable-blink-features=AutomationControlled', // Hide automation indicators
-          '--disable-dev-shm-usage',
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-web-security',
-          '--disable-features=IsolateOrigins,site-per-process',
-          '--disable-infobars',
-          '--disable-notifications',
-          '--disable-popup-blocking',
-          '--disable-save-password-bubble',
-          '--disable-translate',
-          '--no-first-run',
-          '--no-default-browser-check',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-renderer-backgrounding',
-          '--disable-ipc-flooding-protection',
-          '--password-store=basic',
-          '--use-mock-keychain',
-          // Randomize window size slightly to avoid fingerprinting
-          `--window-size=${1920 + Math.floor(Math.random() * 100)},${1080 + Math.floor(Math.random() * 100)}`,
-        ]
-      });
-      logInfo(`Browser launched in ${headless ? 'headless' : 'headed'} mode`);
+      // Log browser launch attempt
+      console.log('========================================');
+      console.log('[Orchestrator] Launching Browser');
+      console.log('========================================');
+      console.log('[Orchestrator] PLAYWRIGHT_BROWSERS_PATH:', process.env.PLAYWRIGHT_BROWSERS_PATH);
+      console.log('[Orchestrator] Headless mode:', headless);
+      console.log('[Orchestrator] Platform:', process.platform);
+      console.log('[Orchestrator] Architecture:', process.arch);
+
+      try {
+        // Launch with enhanced stealth options to avoid bot detection
+        this.browser = await chromium.launch({
+          headless,
+          args: [
+            '--disable-blink-features=AutomationControlled', // Hide automation indicators
+            '--disable-dev-shm-usage',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-web-security',
+            '--disable-features=IsolateOrigins,site-per-process',
+            '--disable-infobars',
+            '--disable-notifications',
+            '--disable-popup-blocking',
+            '--disable-save-password-bubble',
+            '--disable-translate',
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--disable-ipc-flooding-protection',
+            '--password-store=basic',
+            '--use-mock-keychain',
+            // Randomize window size slightly to avoid fingerprinting
+            `--window-size=${1920 + Math.floor(Math.random() * 100)},${1080 + Math.floor(Math.random() * 100)}`,
+          ]
+        });
+        console.log('[Orchestrator] Browser launched successfully in', headless ? 'headless' : 'headed', 'mode');
+        console.log('========================================');
+        logInfo(`Browser launched in ${headless ? 'headless' : 'headed'} mode`);
+      } catch (launchError) {
+        console.error('========================================');
+        console.error('[Orchestrator] BROWSER LAUNCH FAILED');
+        console.error('========================================');
+        console.error('[Orchestrator] Error:', launchError);
+        console.error('[Orchestrator] Error message:', launchError instanceof Error ? launchError.message : String(launchError));
+        console.error('[Orchestrator] Error stack:', launchError instanceof Error ? launchError.stack : 'N/A');
+        console.error('========================================');
+        throw launchError;
+      }
 
       // Check for existing checkpoint
       const checkpoint = this.checkpointManager.load();

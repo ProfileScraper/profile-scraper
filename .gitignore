@@ -6,3 +6,10 @@ output/
 data/
 configs/*.backup
 release/
+.env
+.env.local
+playwright-browsers/
+.browser-downloads/
+playwright-browsers-x64/
+playwright-browsers-arm64/
+browsers/

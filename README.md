@@ -42,11 +42,33 @@ Start the development server:
 npm run dev
 ```
 
-Build for production:
+Browsers are automatically downloaded to the default playwright cache on first run.
+
+## Building for Distribution
+
+ProfileScraper bundles Chromium browsers (~150MB) during the build process. Separate DMGs are created for Intel and ARM architectures.
+
+### macOS
+
+Build architecture-specific DMGs:
 
 ```bash
-npm run build
-npm run package  # Creates DMG in release/
+# ARM (Apple Silicon) - run on ARM Mac
+npm run package:mac:arm
+
+# Intel (x64) - run on Intel Mac
+npm run package:mac:intel
+```
+
+**Output:** `release/ProfileScraper-<version>-<arch>.dmg`
+
+**Note:** You must build on the target architecture. ARM DMGs must be built on ARM Macs, Intel DMGs on Intel Macs. The first build will download browsers (~150MB) which takes 2-3 minutes.
+
+### Windows & Linux
+
+```bash
+npm run package:win   # Windows installer
+npm run package:linux # Linux AppImage and deb
 ```
 
 ## Usage
@@ -90,6 +112,47 @@ Navigate to the **Profiles** tab and click **Create New Profile**:
    - **Export JSON** - Structured JSON format
    - **Export CSV** - Flat CSV with all fields
    - **Export Both** - Get both formats
+
+## Profile Sharing & Explorer
+
+### Importing Profiles
+
+**From File:**
+1. Click "Import Profile" in Profile Library
+2. Select "Import File" tab
+3. Choose a .json profile file
+4. Review and confirm import
+
+**From URL:**
+1. Click "Import Profile" in Profile Library
+2. Select "Import from URL" tab
+3. Paste GitHub raw URL or CDN link (HTTPS only)
+4. Review and confirm import
+
+### Exporting Profiles
+
+1. Click "Export" on any profile card
+2. Review the warning about sharing
+3. Choose save location
+4. Profile downloads as JSON file
+
+### Profile Explorer
+
+Browse community-contributed public profiles:
+1. Navigate to "Profile Explorer" tab
+2. Search by name, domain, or author
+3. Filter by tags (e-commerce, real-estate, etc.)
+4. Click "Clone" to create an editable copy
+
+Public profiles are read-only. Clone them to make modifications.
+
+### Domain Grouping
+
+Organize your profiles by website:
+1. Click "Grouped by Domain" toggle in Profile Library
+2. Profiles grouped under domain headers
+3. Click domain to collapse/expand
+4. View preference persists across sessions
 
 ## Data Storage
 

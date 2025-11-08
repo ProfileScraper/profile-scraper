@@ -22,6 +22,25 @@ export const IPC_CHANNELS = {
   PROFILE_DELETE: 'profile:delete',
   PROFILE_GET: 'profile:get',
   PROFILE_GET_ALL: 'profile:get-all',
+  PROFILE_EXPORT: 'profile:export',
+  PROFILE_IMPORT_FILE: 'profile:import-file',
+  PROFILE_IMPORT_URL: 'profile:import-url',
+  PROFILE_VALIDATE_JSON: 'profile:validate-json',
+  PROFILE_CLONE: 'profile:clone',
+  PROFILE_TOGGLE_IN_LIBRARY: 'profile:toggle-in-library',
+
+  // Profile Explorer operations
+  PROFILE_EXPLORER_SYNC: 'profileExplorer:sync',
+  PROFILE_EXPLORER_GET_ALL: 'profileExplorer:get-all',
+
+  // GitHub authentication
+  GITHUB_AUTH_START: 'github:auth:start',
+  GITHUB_AUTH_STATUS: 'github:auth:status',
+  GITHUB_AUTH_LOGOUT: 'github:auth:logout',
+  GITHUB_AUTH_GET_USER: 'github:auth:get-user',
+
+  // GitHub publishing
+  GITHUB_PUBLISH_PROFILE: 'github:publish:profile',
 
   // Job operations
   JOB_GET_ALL: 'job:get-all',
@@ -32,6 +51,7 @@ export const IPC_CHANNELS = {
   JOB_DELETE: 'job:delete',
   JOB_DELETE_EMPTY: 'job:delete-empty',
   JOB_GET_QUALITY_STATS: 'job:get-quality-stats',
+  JOB_GET_SCREENSHOT: 'job:get-screenshot',
 
   // Data management operations
   DATA_GET_PRODUCTS: 'data:get-products',

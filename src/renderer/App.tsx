@@ -5,6 +5,7 @@ import { ProfileLibrary } from './components/ProfileLibrary';
 import { ProfileBuilder } from './components/ProfileBuilder';
 import { JobsDashboard } from './components/JobsDashboard';
 import { JobDataViewer } from './components/JobDataViewer';
+import { ProfileExplorer } from './components/ProfileExplorer';
 import { Help } from './components/Help';
 import './styles/index.css';
 
@@ -19,6 +20,7 @@ export function App() {
             <Route path="/profiles" element={<ProfileLibrary />} />
             <Route path="/profiles/new" element={<ProfileBuilder />} />
             <Route path="/profiles/:id/edit" element={<ProfileBuilder />} />
+            <Route path="/profile-explorer" element={<ProfileExplorer />} />
             <Route path="/jobs" element={<JobsDashboard />} />
             <Route path="/jobs/:id/data" element={<JobDataViewer />} />
             <Route path="/help" element={<Help />} />

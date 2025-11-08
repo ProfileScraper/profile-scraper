@@ -3,6 +3,9 @@ import { EventEmitter } from 'events';
 import { SiteProfile } from '../../shared/types';
 import { ActionExecutor } from './ActionExecutor';
 import { logInfo } from '../logger';
+import { app } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
 
 export class CategoryCrawler extends EventEmitter {
   private page: Page;
@@ -119,14 +122,65 @@ export class CategoryCrawler extends EventEmitter {
 
       // Check for common bot detection indicators
       const bodyHTML = await this.page.innerHTML('body');
-      if (bodyHTML.toLowerCase().includes('captcha')) {
+      const bodyLower = bodyHTML.toLowerCase();
+
+      let botDetected = false;
+      let detectionReason = '';
+
+      if (bodyLower.includes('captcha')) {
         logInfo(`[CategoryCrawler] DETECTED: Page contains CAPTCHA`);
+        botDetected = true;
+        detectionReason = 'CAPTCHA detected on page';
       }
-      if (bodyHTML.toLowerCase().includes('bot') || bodyHTML.toLowerCase().includes('robot')) {
+      if (bodyLower.includes('bot') || bodyLower.includes('robot')) {
         logInfo(`[CategoryCrawler] DETECTED: Page mentions bots/robots`);
+        if (!botDetected) {
+          botDetected = true;
+          detectionReason = 'Bot/robot detection message found';
+        }
       }
-      if (bodyHTML.toLowerCase().includes('access denied') || bodyHTML.toLowerCase().includes('blocked')) {
+      if (bodyLower.includes('access denied') || bodyLower.includes('blocked')) {
         logInfo(`[CategoryCrawler] DETECTED: Page indicates access denied/blocked`);
+        if (!botDetected) {
+          botDetected = true;
+          detectionReason = 'Access denied or blocked';
+        }
+      }
+
+      // If bot detection found, capture screenshot and throw error
+      if (botDetected) {
+        let screenshotPath: string | null = null;
+
+        try {
+          // Determine screenshot directory
+          const logDir = app.isPackaged
+            ? path.join(app.getPath('userData'), 'logs')
+            : path.join(process.cwd(), 'output');
+
+          // Ensure directory exists
+          if (!fs.existsSync(logDir)) {
+            fs.mkdirSync(logDir, { recursive: true });
+          }
+
+          // Generate filename with timestamp
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          screenshotPath = path.join(logDir, `bot-detection-${timestamp}.png`);
+
+          // Capture screenshot
+          await this.page.screenshot({ path: screenshotPath, fullPage: true });
+          logInfo(`[CategoryCrawler] Bot detection screenshot saved to: ${screenshotPath}`);
+        } catch (screenshotError) {
+          // If screenshot fails, log but continue
+          logInfo(`[CategoryCrawler] Failed to capture screenshot: ${screenshotError}`);
+          screenshotPath = null;
+        }
+
+        // Throw error with or without screenshot path
+        if (screenshotPath) {
+          throw new Error(`Bot detection triggered: ${detectionReason}. The site has blocked automated access. Screenshot saved to: ${screenshotPath}`);
+        } else {
+          throw new Error(`Bot detection triggered: ${detectionReason}. The site has blocked automated access. Try adjusting anti-detection settings or use a different approach.`);
+        }
       }
 
       // Log all data-selenium attributes to see what IS on the page

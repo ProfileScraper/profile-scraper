@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ProfileCard } from './ProfileCard';
+import { ImportDialog } from './ImportDialog';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { groupProfilesByDomain, sortDomains } from '../utils/profileGrouping';
 
 interface Profile {
   id: string;
@@ -8,10 +11,16 @@ interface Profile {
   categoryUrl: string;
   createdAt: number;
   updatedAt: number;
+  isPublic?: boolean;
+  isReadonly?: boolean;
+  inLibrary?: boolean;
+  author?: string;
+  description?: string;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
 type SortField = 'name' | 'createdAt' | 'updatedAt' | 'categoryUrl';
+type ViewMode = 'grid' | 'grouped';
 
 export function ProfileLibrary() {
   const navigate = useNavigate();
@@ -20,6 +29,11 @@ export function ProfileLibrary() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+  const [viewMode, setViewMode] = useLocalStorage<ViewMode>('profileViewMode', 'grid');
+  const [collapsedDomains, setCollapsedDomains] = useLocalStorage<string[]>('collapsedDomains', []);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [publicSectionCollapsed, setPublicSectionCollapsed] = useLocalStorage<boolean>('publicSectionCollapsed', false);
+  const [publicSearchTerm, setPublicSearchTerm] = useState('');
 
   const loadProfiles = async () => {
     setLoading(true);
@@ -72,6 +86,17 @@ export function ProfileLibrary() {
     }
   };
 
+  const toggleDomain = (domain: string) => {
+    const newCollapsed = [...collapsedDomains];
+    const index = newCollapsed.indexOf(domain);
+    if (index > -1) {
+      newCollapsed.splice(index, 1);
+    } else {
+      newCollapsed.push(domain);
+    }
+    setCollapsedDomains(newCollapsed);
+  };
+
   // Extract domain from categoryUrl
   const getDomain = (url: string): string => {
     try {
@@ -82,8 +107,28 @@ export function ProfileLibrary() {
     }
   };
 
-  // Filter profiles based on search term
-  let filteredProfiles = profiles.filter(profile => {
+  // Separate public and private profiles
+  // Only show public profiles that are in the library
+  const publicProfiles = profiles.filter(p => p.isPublic && p.inLibrary !== false);
+  const privateProfiles = profiles.filter(p => !p.isPublic);
+
+  // Filter public profiles based on public search term
+  let filteredPublicProfiles = publicProfiles.filter(profile => {
+    if (!publicSearchTerm) return true;
+
+    const searchLower = publicSearchTerm.toLowerCase();
+    const domain = getDomain(profile.categoryUrl).toLowerCase();
+
+    return (
+      profile.name.toLowerCase().includes(searchLower) ||
+      profile.categoryUrl.toLowerCase().includes(searchLower) ||
+      domain.includes(searchLower) ||
+      profile.author?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  // Filter private profiles based on search term
+  let filteredProfiles = privateProfiles.filter(profile => {
     if (!searchTerm) return true;
 
     const searchLower = searchTerm.toLowerCase();
@@ -158,12 +203,45 @@ export function ProfileLibrary() {
       {/* Header */}
       <div className="h-[82px] px-6 border-b border-gray-400 flex justify-between items-center shrink-0">
         <h1 className="text-xl font-bold text-gray-800">Scraping Profiles</h1>
-        <button
-          onClick={() => navigate('/profiles/new')}
-          className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors font-medium"
-        >
-          + New Profile
-        </button>
+        <div className="flex gap-3 items-center">
+          {/* Import Button */}
+          <button
+            onClick={() => setShowImportDialog(true)}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
+          >
+            Import Profile
+          </button>
+
+          {/* View Toggle */}
+          <div className="flex gap-2 border border-gray-300 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-4 py-2 rounded transition-colors font-medium text-sm ${
+                viewMode === 'grid'
+                  ? 'bg-blue-500 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              Grid View
+            </button>
+            <button
+              onClick={() => setViewMode('grouped')}
+              className={`px-4 py-2 rounded transition-colors font-medium text-sm ${
+                viewMode === 'grouped'
+                  ? 'bg-blue-500 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              Grouped by Domain
+            </button>
+          </div>
+          <button
+            onClick={() => navigate('/profiles/new')}
+            className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors font-medium"
+          >
+            + New Profile
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto">
@@ -185,6 +263,67 @@ export function ProfileLibrary() {
           </div>
       ) : (
         <div className="px-8 py-6">
+          {/* Public Profiles Section */}
+          {publicProfiles.length > 0 && (
+            <div className="mb-8 border border-blue-300 rounded-lg bg-blue-50">
+              <button
+                onClick={() => setPublicSectionCollapsed(!publicSectionCollapsed)}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-blue-100 rounded-t-lg transition-colors"
+              >
+                <div>
+                  <h2 className="text-lg font-semibold text-blue-900">
+                    Public Profiles ({filteredPublicProfiles.length})
+                  </h2>
+                  <p className="text-sm text-blue-700 mt-1">
+                    From Profile Explorer - Read-only
+                  </p>
+                </div>
+                <span className="text-blue-700 text-xl">
+                  {publicSectionCollapsed ? '▶' : '▼'}
+                </span>
+              </button>
+
+              {!publicSectionCollapsed && (
+                <div className="p-4">
+                  {/* Public Profiles Search */}
+                  <div className="mb-4">
+                    <input
+                      type="text"
+                      value={publicSearchTerm}
+                      onChange={(e) => setPublicSearchTerm(e.target.value)}
+                      placeholder="Search public profiles by name, domain, or author..."
+                      className="w-full px-4 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {filteredPublicProfiles.length === 0 ? (
+                    <div className="text-center py-8 text-blue-700">
+                      No public profiles match your search
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filteredPublicProfiles.map(profile => (
+                        <ProfileCard
+                          key={profile.id}
+                          {...profile}
+                          onDelete={handleDelete}
+                          onRun={handleRun}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Private Profiles Header */}
+          {publicProfiles.length > 0 && privateProfiles.length > 0 && (
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+              My Profiles ({filteredProfiles.length})
+            </h2>
+          )}
+
           {/* Search and Sort Controls */}
           <div className="bg-gray-50 border border-gray-400 rounded-lg p-4 mb-6">
             <div className="space-y-4">
@@ -230,9 +369,9 @@ export function ProfileLibrary() {
               )}
 
               {/* Results Count */}
-              {filteredProfiles.length !== profiles.length && (
+              {filteredProfiles.length !== privateProfiles.length && (
                 <p className="text-sm text-gray-600">
-                  Showing {filteredProfiles.length} of {profiles.length} profiles
+                  Showing {filteredProfiles.length} of {privateProfiles.length} profiles
                 </p>
               )}
             </div>
@@ -257,7 +396,7 @@ export function ProfileLibrary() {
                 Clear filters
               </button>
             </div>
-          ) : (
+          ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProfiles.map(profile => (
                 <ProfileCard
@@ -268,10 +407,59 @@ export function ProfileLibrary() {
                 />
               ))}
             </div>
+          ) : (
+            <div className="space-y-6">
+              {(() => {
+                const grouped = groupProfilesByDomain(filteredProfiles as any);
+                const domains = sortDomains(Array.from(grouped.keys()));
+
+                return domains.map(domain => {
+                  const domainProfiles = grouped.get(domain)!;
+                  const isCollapsed = collapsedDomains.includes(domain);
+
+                  return (
+                    <div key={domain} className="border border-gray-400 rounded-lg p-4 bg-gray-50">
+                      <button
+                        onClick={() => toggleDomain(domain)}
+                        className="flex items-center justify-between w-full text-left hover:bg-gray-100 rounded p-2 transition-colors"
+                      >
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          {domain} ({domainProfiles.length} {domainProfiles.length === 1 ? 'profile' : 'profiles'})
+                        </h3>
+                        <span className="text-gray-600 text-xl">
+                          {isCollapsed ? '▶' : '▼'}
+                        </span>
+                      </button>
+
+                      {!isCollapsed && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                          {domainProfiles.map(profile => (
+                            <ProfileCard
+                              key={profile.id}
+                              {...profile}
+                              onDelete={handleDelete}
+                              onRun={handleRun}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
           )}
         </div>
       )}
       </div>
+
+      {/* Import Dialog */}
+      {showImportDialog && (
+        <ImportDialog
+          onClose={() => setShowImportDialog(false)}
+          onImportSuccess={() => loadProfiles()}
+        />
+      )}
     </div>
   );
 }

@@ -28,6 +28,9 @@ interface ProfileFormState {
   headless: boolean;
   overwriteExisting: boolean;
 
+  // Profile metadata
+  isReadonly: boolean;
+
   // UI state
   currentStep: number;
   isInspectorActive: boolean;
@@ -89,6 +92,7 @@ const initialState: ProfileFormState = {
   checkpointInterval: 10,
   headless: true, // Default to headless mode
   overwriteExisting: false, // Default to false - only scrape new products
+  isReadonly: false,
   currentStep: 0,
   isInspectorActive: false,
   isSaving: false,
@@ -210,6 +214,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         checkpointInterval: profile.checkpointInterval,
         headless: profile.headless !== false, // Default to true
         overwriteExisting: profile.overwriteExisting || false, // Default to false
+        isReadonly: profile.isReadonly || false,
       });
     }
   },

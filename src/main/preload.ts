@@ -21,6 +21,19 @@ const IPC_CHANNELS = {
   PROFILE_DELETE: 'profile:delete',
   PROFILE_GET: 'profile:get',
   PROFILE_GET_ALL: 'profile:get-all',
+  PROFILE_EXPORT: 'profile:export',
+  PROFILE_IMPORT_FILE: 'profile:import-file',
+  PROFILE_IMPORT_URL: 'profile:import-url',
+  PROFILE_VALIDATE_JSON: 'profile:validate-json',
+  PROFILE_CLONE: 'profile:clone',
+  PROFILE_TOGGLE_IN_LIBRARY: 'profile:toggle-in-library',
+  PROFILE_EXPLORER_SYNC: 'profileExplorer:sync',
+  PROFILE_EXPLORER_GET_ALL: 'profileExplorer:get-all',
+  GITHUB_AUTH_START: 'github:auth:start',
+  GITHUB_AUTH_STATUS: 'github:auth:status',
+  GITHUB_AUTH_LOGOUT: 'github:auth:logout',
+  GITHUB_AUTH_GET_USER: 'github:auth:get-user',
+  GITHUB_PUBLISH_PROFILE: 'github:publish:profile',
   JOB_GET_ALL: 'job:get-all',
   JOB_GET: 'job:get',
   JOB_GET_ERRORS: 'job:get-errors',
@@ -29,6 +42,7 @@ const IPC_CHANNELS = {
   JOB_DELETE: 'job:delete',
   JOB_DELETE_EMPTY: 'job:delete-empty',
   JOB_GET_QUALITY_STATS: 'job:get-quality-stats',
+  JOB_GET_SCREENSHOT: 'job:get-screenshot',
   LOGS_GET_BY_PRODUCT_ID: 'logs:get-by-product-id',
   LOGS_GET_BY_JOB_ID: 'logs:get-by-job-id',
   PROFILE_TEST: 'profile:test',
@@ -71,6 +85,25 @@ try {
   deleteProfile: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_DELETE, id),
   getProfile: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_GET, id),
   getAllProfiles: () => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_GET_ALL),
+  exportProfile: (profileId: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_EXPORT, profileId),
+  importProfileFromFile: () => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_IMPORT_FILE),
+  importProfileFromURL: (url: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_IMPORT_URL, url),
+  validateProfileJSON: (json: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_VALIDATE_JSON, json),
+  cloneProfile: (sourceId: string) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_CLONE, sourceId),
+  toggleProfileInLibrary: (profileId: string, inLibrary: boolean) => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_TOGGLE_IN_LIBRARY, profileId, inLibrary),
+
+  // Profile Explorer operations
+  syncProfileExplorer: () => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_EXPLORER_SYNC),
+  getPublicProfiles: () => ipcRenderer.invoke(IPC_CHANNELS.PROFILE_EXPLORER_GET_ALL),
+
+  // GitHub authentication
+  githubAuthStart: () => ipcRenderer.invoke(IPC_CHANNELS.GITHUB_AUTH_START),
+  githubAuthStatus: () => ipcRenderer.invoke(IPC_CHANNELS.GITHUB_AUTH_STATUS),
+  githubAuthLogout: () => ipcRenderer.invoke(IPC_CHANNELS.GITHUB_AUTH_LOGOUT),
+  githubAuthGetUser: () => ipcRenderer.invoke(IPC_CHANNELS.GITHUB_AUTH_GET_USER),
+
+  // GitHub publishing
+  githubPublishProfile: (data: any) => ipcRenderer.invoke(IPC_CHANNELS.GITHUB_PUBLISH_PROFILE, data),
 
   // Job operations
   getAllJobs: (filter?: { profileId?: string; status?: string }) => ipcRenderer.invoke(IPC_CHANNELS.JOB_GET_ALL, filter),
@@ -81,6 +114,7 @@ try {
   deleteJob: (jobId: string) => ipcRenderer.invoke(IPC_CHANNELS.JOB_DELETE, jobId),
   deleteEmptyJobs: () => ipcRenderer.invoke(IPC_CHANNELS.JOB_DELETE_EMPTY),
   getJobQualityStats: (jobId: string) => ipcRenderer.invoke(IPC_CHANNELS.JOB_GET_QUALITY_STATS, jobId),
+  getJobScreenshot: (screenshotPath: string) => ipcRenderer.invoke(IPC_CHANNELS.JOB_GET_SCREENSHOT, screenshotPath),
 
   // Product logs
   getProductLogs: (productId: number) => ipcRenderer.invoke(IPC_CHANNELS.LOGS_GET_BY_PRODUCT_ID, productId),

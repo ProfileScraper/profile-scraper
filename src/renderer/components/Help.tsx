@@ -1,6 +1,7 @@
 import React from 'react';
 
 export function Help() {
+
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Header */}
@@ -110,7 +111,38 @@ export function Help() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">2. Start a Scraping Job</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">2. Profile Explorer & Public Profiles</h2>
+              <p className="text-gray-700 mb-3">
+                Browse and use community-contributed profiles from the <strong>Profile Explorer</strong>:
+              </p>
+              <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+                <li><strong>Browse Public Profiles</strong> - Discover pre-configured profiles for popular e-commerce sites</li>
+                <li><strong>Add to Library</strong> - Click the hamburger menu on any profile and select "Add to Library"</li>
+                <li><strong>View in Scraping Profiles</strong> - Added profiles appear in your Scraping Profiles tab</li>
+                <li><strong>Clone to Edit</strong> - Create an editable copy of any public profile</li>
+                <li>
+                  <strong>Share Your Profiles</strong> - Publish your own profiles to help the community
+                  <ul className="list-circle list-inside ml-6 mt-1">
+                    <li>Login with GitHub (required for publishing)</li>
+                    <li>Click "Publish" on any of your profiles</li>
+                    <li>Add description and tags to help others find it</li>
+                    <li>Creates a pull request to the community repository</li>
+                  </ul>
+                </li>
+              </ul>
+
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mt-4">
+                <h3 className="font-bold text-blue-900 mb-2">About Public Profiles</h3>
+                <p className="text-sm text-gray-700">
+                  Public profiles are <strong>read-only</strong> and maintained by the community.
+                  They're synced from GitHub and regularly updated. If you need to customize a public
+                  profile, use <strong>Clone to Edit</strong> to create your own editable copy.
+                </p>
+              </div>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">3. Start a Scraping Job</h2>
               <ol className="list-decimal list-inside space-y-2 text-gray-700 ml-4">
                 <li>Go to <strong>Profiles</strong> and click <strong>Run</strong> on your profile</li>
                 <li className="ml-6">
@@ -134,7 +166,7 @@ export function Help() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">3. View & Export Data</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">4. View & Export Data</h2>
               <ol className="list-decimal list-inside space-y-2 text-gray-700 ml-4">
                 <li>Click <strong>View Data</strong> on any completed job</li>
                 <li>Browse scraped product data in a searchable table</li>
@@ -154,6 +186,9 @@ export function Help() {
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Features</h2>
               <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
                 <li>Profile Management - Create, edit, and organize scraping profiles</li>
+                <li>Profile Explorer - Browse and use community-contributed public profiles</li>
+                <li>GitHub Integration - Login with GitHub to publish and share profiles</li>
+                <li>Profile Library System - Add/remove public profiles from your library</li>
                 <li>Live Job Monitoring - Real-time progress tracking with phase updates</li>
                 <li>Product-Level Logging - Detailed logs for each scraped product</li>
                 <li>Concurrent Scraping - Configurable worker threads for parallel scraping</li>
@@ -163,6 +198,7 @@ export function Help() {
                 <li>Checkpoint System - Resumable scraping with automatic progress saving</li>
                 <li>Data Export - Export to CSV, JSON, or both formats</li>
                 <li>Job History - View all past scraping jobs</li>
+                <li>Import/Export Profiles - Share profiles as JSON files or URLs</li>
               </ul>
             </section>
 
@@ -197,7 +233,7 @@ export function Help() {
 
             <section>
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Version</h2>
-              <p className="text-gray-700">v1.0.0</p>
+              <p className="text-gray-700">v1.5.2</p>
             </section>
           </div>
         </div>

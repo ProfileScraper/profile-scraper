@@ -22,7 +22,27 @@ export interface SiteProfile {
   checkpointInterval: number;
   headless?: boolean; // Default true - headless mode for faster scraping
   overwriteExisting?: boolean; // Default false - if true, re-scraping a URL will overwrite the existing data
+
+  // New metadata fields for profile sharing
+  isPublic?: boolean;
+  isReadonly?: boolean;
+  sourceProfileId?: string;
+  sourceUrl?: string;
+  author?: string;
+  description?: string;
+  tags?: string[];
+  version?: string;
+  lastSynced?: number;
+  inLibrary?: boolean; // Whether user has added this profile to their library
 }
+
+export interface ProfileMetadata {
+  id: string;
+  created_at: number;
+  updated_at: number;
+}
+
+export type ProfileWithMetadata = SiteProfile & ProfileMetadata;
 
 export interface PaginationConfig {
   type: 'button' | 'infinite' | 'url';
