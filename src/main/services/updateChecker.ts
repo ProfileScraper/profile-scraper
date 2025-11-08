@@ -1,5 +1,5 @@
 import { app } from 'electron';
-import { logger } from '../utils/logger';
+import { logger } from '../logger';
 
 interface GitHubRelease {
   tag_name: string;
@@ -39,7 +39,7 @@ export class UpdateChecker {
         throw new Error(`GitHub API returned ${response.status}`);
       }
 
-      const release: GitHubRelease = await response.json();
+      const release = await response.json() as GitHubRelease;
       const latestVersion = this.normalizeVersion(release.tag_name);
       const currentNormalized = this.normalizeVersion(currentVersion);
 
