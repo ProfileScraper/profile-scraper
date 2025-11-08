@@ -1,5 +1,6 @@
 appId: com.profilescraper.app
 productName: ProfileScraper
+publish: never
 directories:
   output: release
 files:
