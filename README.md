@@ -28,17 +28,18 @@ Download the latest DMG from [releases](https://github.com/ProfileScraper/profil
 - **Intel Macs**: `ProfileScraper-{version}-x64.dmg`
 - **Apple Silicon (M1/M2/M3)**: `ProfileScraper-{version}-arm64.dmg`
 
-**Important**: The app is not code-signed. macOS will show a security warning on first launch.
+**Important**: The app is not notarized with Apple. macOS Gatekeeper will show a warning on first launch.
 
-**To open the app:**
+**Installation Steps:**
 
-1. **Option 1 (Recommended)**: Right-click the app and select "Open", then click "Open" in the dialog
-2. **Option 2 (Terminal)**: Run this command to remove the quarantine flag:
-   ```bash
-   xattr -cr /Applications/ProfileScraper.app
-   ```
+1. Download and open the DMG file
+2. Drag **ProfileScraper** to your **Applications** folder
+3. Try to open ProfileScraper - you'll see a security warning
+4. Go to **System Preferences** → **Privacy & Security**
+5. Scroll down and click **"Open Anyway"** next to the ProfileScraper message
+6. Confirm by clicking **"Open"**
 
-After the first successful launch, you can open it normally.
+After the first successful launch, you can open ProfileScraper normally without any warnings.
 
 ### For Developers
 
