@@ -8,6 +8,7 @@ import { JobDataViewer } from './components/JobDataViewer';
 import { ProfileExplorer } from './components/ProfileExplorer';
 import { Help } from './components/Help';
 import UpdateNotification from './components/UpdateNotification';
+import TrustCertificateModal from './components/TrustCertificateModal';
 import './styles/index.css';
 
 export function App() {
@@ -15,6 +16,7 @@ export function App() {
     <BrowserRouter>
       <div className="flex h-screen bg-gray-100 flex-col">
         <UpdateNotification />
+        <TrustCertificateModal />
         <div className="flex flex-1 min-h-0">
           <Sidebar />
           <main className="flex-1 overflow-auto">

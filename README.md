@@ -41,13 +41,15 @@ Download the latest DMG from [releases](https://github.com/ProfileScraper/profil
 
 **Optional: Trust Certificate (Recommended)**
 
-To avoid "Open Anyway" for future updates, double-click **"Trust Certificate.command"** in the DMG window:
-- Extracts the code signing certificate from ProfileScraper
-- Adds it to your system's trusted certificates (requires password)
+After first launch, ProfileScraper will offer to trust its code signing certificate:
+- Click "Trust Certificate" in the modal dialog
+- Enter your Mac password when prompted
 - Future updates will install without Gatekeeper warnings
 - One-time setup per Mac
 
-After the first successful launch (or after trusting the certificate), you can open ProfileScraper normally without any warnings.
+You can also click "Later" to be reminded next time, or "Don't Ask Again" to dismiss permanently.
+
+After the first successful launch (or after trusting the certificate), ProfileScraper will open normally without warnings.
 
 ### For Developers
 

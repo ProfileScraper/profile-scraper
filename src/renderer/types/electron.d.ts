@@ -147,6 +147,7 @@ export interface ElectronAPI {
   // App updates
   checkForUpdates: () => Promise<UpdateInfo>;
   openReleaseUrl: (url: string) => Promise<void>;
+  trustCertificate: () => Promise<{ success: boolean; error?: string }>;
 }
 
 export interface UpdateInfo {

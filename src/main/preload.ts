@@ -52,6 +52,7 @@ const IPC_CHANNELS = {
   INSPECTOR_SELECT: 'inspector:select',
   APP_CHECK_FOR_UPDATES: 'app:check-for-updates',
   APP_OPEN_RELEASE_URL: 'app:open-release-url',
+  APP_TRUST_CERTIFICATE: 'app:trust-certificate',
 };
 
 console.log('[Preload] Preload script starting...');
@@ -147,6 +148,7 @@ try {
   // App updates
   checkForUpdates: () => ipcRenderer.invoke(IPC_CHANNELS.APP_CHECK_FOR_UPDATES),
   openReleaseUrl: (url: string) => ipcRenderer.invoke(IPC_CHANNELS.APP_OPEN_RELEASE_URL, url),
+  trustCertificate: () => ipcRenderer.invoke(IPC_CHANNELS.APP_TRUST_CERTIFICATE),
 });
   console.log('[Preload] electronAPI exposed successfully');
 } catch (error) {
