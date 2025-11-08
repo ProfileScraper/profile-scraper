@@ -53,8 +53,17 @@ async function createWindow(): Promise<void> {
 
     // Initialize database before creating window
     console.log('[Main] Initializing database...');
-    initDatabase();
+    const db = initDatabase();
     console.log('[Main] Database initialized');
+
+    // Clean up orphaned jobs from previous sessions
+    console.log('[Main] Cleaning up orphaned jobs...');
+    const { JobRepository } = require('./database/JobRepository');
+    const jobRepo = new JobRepository(db);
+    const orphanedCount = jobRepo.cleanupOrphanedJobs();
+    if (orphanedCount > 0) {
+      console.log(`[Main] Cleaned up ${orphanedCount} orphaned job(s)`);
+    }
 
     // Run automatic migration from JSON to SQLite
     console.log('[Main] Running migration...');

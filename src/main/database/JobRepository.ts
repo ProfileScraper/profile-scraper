@@ -179,6 +179,25 @@ export class JobRepository {
     }
   }
 
+  /**
+   * Clean up orphaned jobs (jobs stuck in 'running' status from previous sessions)
+   * Should be called on app startup
+   */
+  cleanupOrphanedJobs(): number {
+    const now = Date.now();
+
+    const stmt = this.db.prepare(`
+      UPDATE jobs SET
+        completed_at = ?,
+        status = ?,
+        error_message = ?
+      WHERE status = 'running'
+    `);
+
+    const result = stmt.run(now, 'failed', 'Job was interrupted (app closed while running)');
+    return Number(result.changes || 0);
+  }
+
   getAll(): Job[] {
     const stmt = this.db.prepare('SELECT * FROM jobs ORDER BY started_at DESC');
     const rows = stmt.all() as unknown as JobRow[];
