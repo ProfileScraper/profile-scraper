@@ -24,9 +24,21 @@ A powerful desktop application for scraping product data from e-commerce website
 
 ### For Users (macOS)
 
-Download the latest `ProfileScraper-1.0.0-arm64.dmg` from the releases and install.
+Download the latest DMG from [releases](https://github.com/ProfileScraper/profile-scraper/releases):
+- **Intel Macs**: `ProfileScraper-{version}-x64.dmg`
+- **Apple Silicon (M1/M2/M3)**: `ProfileScraper-{version}-arm64.dmg`
 
-**Note**: The app is not code-signed, so you'll need to right-click and select "Open" the first time to bypass Gatekeeper.
+**Important**: The app is not code-signed. macOS will show a security warning on first launch.
+
+**To open the app:**
+
+1. **Option 1 (Recommended)**: Right-click the app and select "Open", then click "Open" in the dialog
+2. **Option 2 (Terminal)**: Run this command to remove the quarantine flag:
+   ```bash
+   xattr -cr /Applications/ProfileScraper.app
+   ```
+
+After the first successful launch, you can open it normally.
 
 ### For Developers
 
