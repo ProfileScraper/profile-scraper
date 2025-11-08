@@ -42,16 +42,20 @@ jobs:
 
           # Import certificate
           echo "$CERTIFICATE_P12" | base64 --decode > certificate.p12
-          security import certificate.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productbuild
+          security import certificate.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productbuild -A
 
-          # Trust the certificate
+          # Allow access to the key
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+
+          # Extract certificate and trust it
+          openssl pkcs12 -in certificate.p12 -clcerts -nokeys -out certificate.crt -passin pass:"$CERTIFICATE_PASSWORD"
+          sudo security add-trusted-cert -d -r trustRoot -k build.keychain certificate.crt
 
           # Set keychain timeout to prevent locking
           security set-keychain-settings -lut 21600 build.keychain
 
           # Clean up
-          rm certificate.p12
+          rm certificate.p12 certificate.crt
 
       - name: Build ARM Mac DMG
         run: npm run package:mac:arm
