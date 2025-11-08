@@ -20,6 +20,17 @@ mac:
   icon: assets/icon.icns
   artifactName: ${productName}-${version}-${arch}.${ext}
   identity: "Joel Rhine"
+dmg:
+  contents:
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+    - x: 270
+      y: 400
+      type: file
+      path: scripts/trust-certificate.sh
+      name: Trust Certificate.command
 win:
   target:
     - target: nsis
