@@ -62,12 +62,6 @@ jobs:
         env:
           CI: true
 
-      - name: Sign the app with certificate
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          codesign --force --deep --sign "F400347255DE114C6B130C302B0BF84068E13948" "release/mac/ProfileScraper.app"
-          codesign -dvv "release/mac/ProfileScraper.app"
-
       - name: Get version from package.json
         id: package-version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
