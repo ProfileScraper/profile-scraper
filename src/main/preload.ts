@@ -50,6 +50,8 @@ const IPC_CHANNELS = {
   INSPECTOR_OPEN: 'inspector:open',
   INSPECTOR_CLOSE: 'inspector:close',
   INSPECTOR_SELECT: 'inspector:select',
+  APP_CHECK_FOR_UPDATES: 'app:check-for-updates',
+  APP_OPEN_RELEASE_URL: 'app:open-release-url',
 };
 
 console.log('[Preload] Preload script starting...');
@@ -141,6 +143,10 @@ try {
       ipcRenderer.removeListener(IPC_CHANNELS.INSPECTOR_SELECT, handler);
     };
   },
+
+  // App updates
+  checkForUpdates: () => ipcRenderer.invoke(IPC_CHANNELS.APP_CHECK_FOR_UPDATES),
+  openReleaseUrl: (url: string) => ipcRenderer.invoke(IPC_CHANNELS.APP_OPEN_RELEASE_URL, url),
 });
   console.log('[Preload] electronAPI exposed successfully');
 } catch (error) {

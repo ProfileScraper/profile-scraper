@@ -143,6 +143,19 @@ export interface ElectronAPI {
   openInspector: (url: string, selectorType: string) => Promise<void>;
   closeInspector: () => Promise<void>;
   onInspectorSelect: (callback: (selector: string) => void) => (() => void) | void;
+
+  // App updates
+  checkForUpdates: () => Promise<UpdateInfo>;
+  openReleaseUrl: (url: string) => Promise<void>;
+}
+
+export interface UpdateInfo {
+  available: boolean;
+  currentVersion: string;
+  latestVersion?: string;
+  releaseUrl?: string;
+  releaseNotes?: string;
+  publishedAt?: string;
 }
 
 declare global {

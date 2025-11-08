@@ -74,4 +74,8 @@ export const IPC_CHANNELS = {
   INSPECTOR_OPEN: 'inspector:open',
   INSPECTOR_CLOSE: 'inspector:close',
   INSPECTOR_SELECT: 'inspector:select',
+
+  // App updates
+  APP_CHECK_FOR_UPDATES: 'app:check-for-updates',
+  APP_OPEN_RELEASE_URL: 'app:open-release-url',
 } as const;
