@@ -38,8 +38,14 @@ import { setupGitHubHandlers } from './ipc/githubHandlers';
 import { setupAppHandlers } from './ipc/appHandlers';
 import { initDatabase } from './database/db';
 import { migrateFromJSON } from './database/migration';
+import { AutoUpdaterService } from './services/autoUpdater';
 
 let mainWindow: BrowserWindow | null = null;
+let autoUpdaterService: AutoUpdaterService | null = null;
+
+export function getAutoUpdaterService(): AutoUpdaterService | null {
+  return autoUpdaterService;
+}
 
 async function createWindow(): Promise<void> {
   try {
@@ -128,6 +134,25 @@ async function createWindow(): Promise<void> {
   setupGitHubHandlers(mainWindow);
 
   console.log('[Main] IPC handlers configured');
+
+  // Initialize auto-updater (only in production)
+  if (app.isPackaged) {
+    console.log('[Main] Initializing auto-updater...');
+    autoUpdaterService = new AutoUpdaterService();
+    autoUpdaterService.setMainWindow(mainWindow);
+
+    // Check for updates after window content is loaded
+    mainWindow.webContents.on('did-finish-load', () => {
+      setTimeout(() => {
+        console.log('[Main] Checking for updates...');
+        autoUpdaterService?.checkForUpdates().catch((err) => {
+          console.error('[Main] Update check failed:', err);
+        });
+      }, 5000);
+    });
+  } else {
+    console.log('[Main] Auto-updater disabled in development mode');
+  }
 
     mainWindow.on('closed', () => {
       console.log('[Main] Main window closed');

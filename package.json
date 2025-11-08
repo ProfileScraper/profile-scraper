@@ -1,6 +1,6 @@
 {
   "name": "profile-scraper",
-  "version": "1.5.7",
+  "version": "1.5.8",
   "description": "Profile-based web scraper with Electron and patchright",
   "main": "dist/main/main/main.js",
   "scripts": {
@@ -30,6 +30,7 @@
     "@octokit/rest": "^22.0.1",
     "csv-writer": "^1.6.0",
     "electron-store": "^11.0.2",
+    "electron-updater": "^6.6.2",
     "patchright": "^1.56.1",
     "react": "^19.2.0",
     "react-beautiful-dnd": "^13.1.1",

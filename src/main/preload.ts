@@ -53,6 +53,12 @@ const IPC_CHANNELS = {
   APP_CHECK_FOR_UPDATES: 'app:check-for-updates',
   APP_OPEN_RELEASE_URL: 'app:open-release-url',
   APP_TRUST_CERTIFICATE: 'app:trust-certificate',
+  APP_DOWNLOAD_UPDATE: 'app:download-update',
+  APP_QUIT_AND_INSTALL: 'app:quit-and-install',
+  UPDATER_UPDATE_AVAILABLE: 'updater:update-available',
+  UPDATER_DOWNLOAD_PROGRESS: 'updater:download-progress',
+  UPDATER_UPDATE_DOWNLOADED: 'updater:update-downloaded',
+  UPDATER_ERROR: 'updater:error',
 };
 
 console.log('[Preload] Preload script starting...');
@@ -147,8 +153,32 @@ try {
 
   // App updates
   checkForUpdates: () => ipcRenderer.invoke(IPC_CHANNELS.APP_CHECK_FOR_UPDATES),
+  downloadUpdate: () => ipcRenderer.invoke(IPC_CHANNELS.APP_DOWNLOAD_UPDATE),
+  quitAndInstall: () => ipcRenderer.invoke(IPC_CHANNELS.APP_QUIT_AND_INSTALL),
   openReleaseUrl: (url: string) => ipcRenderer.invoke(IPC_CHANNELS.APP_OPEN_RELEASE_URL, url),
   trustCertificate: () => ipcRenderer.invoke(IPC_CHANNELS.APP_TRUST_CERTIFICATE),
+
+  // Update event listeners
+  onUpdateAvailable: (callback: (info: any) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on(IPC_CHANNELS.UPDATER_UPDATE_AVAILABLE, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.UPDATER_UPDATE_AVAILABLE, handler);
+  },
+  onDownloadProgress: (callback: (progress: any) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on(IPC_CHANNELS.UPDATER_DOWNLOAD_PROGRESS, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.UPDATER_DOWNLOAD_PROGRESS, handler);
+  },
+  onUpdateDownloaded: (callback: (info: any) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on(IPC_CHANNELS.UPDATER_UPDATE_DOWNLOADED, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.UPDATER_UPDATE_DOWNLOADED, handler);
+  },
+  onUpdateError: (callback: (error: string) => void) => {
+    const handler = (_: any, data: string) => callback(data);
+    ipcRenderer.on(IPC_CHANNELS.UPDATER_ERROR, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.UPDATER_ERROR, handler);
+  },
 });
   console.log('[Preload] electronAPI exposed successfully');
 } catch (error) {

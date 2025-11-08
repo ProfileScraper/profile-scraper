@@ -1,6 +1,9 @@
 appId: com.profilescraper.app
 productName: ProfileScraper
-publish: null
+publish:
+  provider: github
+  owner: ProfileScraper
+  repo: profile-scraper
 directories:
   output: release
 files:

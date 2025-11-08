@@ -1,11 +1,10 @@
 import { ipcMain, app, shell } from 'electron';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import * as path from 'path';
-import { UpdateChecker } from '../services/updateChecker';
+import { getAutoUpdaterService } from '../main';
+import { logger } from '../logger';
 
 const execAsync = promisify(exec);
-const updateChecker = new UpdateChecker();
 
 export function setupAppHandlers() {
   ipcMain.handle('app:get-version', async () => {
@@ -13,11 +12,45 @@ export function setupAppHandlers() {
   });
 
   ipcMain.handle('app:check-for-updates', async () => {
-    return await updateChecker.checkForUpdates();
+    const service = getAutoUpdaterService();
+    if (!service) {
+      logger.warn('[AppHandlers] Auto-updater not available (development mode)');
+      throw new Error('Auto-updater is only available in production builds');
+    }
+    try {
+      return await service.checkForUpdates();
+    } catch (error) {
+      logger.error('[AppHandlers] Check for updates failed:', error);
+      throw error;
+    }
   });
 
-  ipcMain.handle('app:open-release-url', async (_event, url: string) => {
-    await shell.openExternal(url);
+  ipcMain.handle('app:download-update', async () => {
+    const service = getAutoUpdaterService();
+    if (!service) {
+      logger.warn('[AppHandlers] Auto-updater not available (development mode)');
+      throw new Error('Auto-updater is only available in production builds');
+    }
+    try {
+      return await service.downloadUpdate();
+    } catch (error) {
+      logger.error('[AppHandlers] Download update failed:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('app:quit-and-install', async () => {
+    const service = getAutoUpdaterService();
+    if (!service) {
+      logger.warn('[AppHandlers] Auto-updater not available (development mode)');
+      throw new Error('Auto-updater is only available in production builds');
+    }
+    try {
+      service.quitAndInstall();
+    } catch (error) {
+      logger.error('[AppHandlers] Quit and install failed:', error);
+      throw error;
+    }
   });
 
   ipcMain.handle('app:trust-certificate', async () => {

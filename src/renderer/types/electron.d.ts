@@ -145,18 +145,33 @@ export interface ElectronAPI {
   onInspectorSelect: (callback: (selector: string) => void) => (() => void) | void;
 
   // App updates
-  checkForUpdates: () => Promise<UpdateInfo>;
+  checkForUpdates: () => Promise<void>;
+  downloadUpdate: () => Promise<void>;
+  quitAndInstall: () => void;
   openReleaseUrl: (url: string) => Promise<void>;
   trustCertificate: () => Promise<{ success: boolean; error?: string }>;
+
+  // Update event listeners
+  onUpdateAvailable: (callback: (info: UpdateAvailableInfo) => void) => () => void;
+  onDownloadProgress: (callback: (progress: DownloadProgress) => void) => () => void;
+  onUpdateDownloaded: (callback: (info: UpdateDownloadedInfo) => void) => () => void;
+  onUpdateError: (callback: (error: string) => void) => () => void;
 }
 
-export interface UpdateInfo {
-  available: boolean;
-  currentVersion: string;
-  latestVersion?: string;
-  releaseUrl?: string;
+export interface UpdateAvailableInfo {
+  version: string;
   releaseNotes?: string;
-  publishedAt?: string;
+  releaseDate?: string;
+}
+
+export interface DownloadProgress {
+  percent: number;
+  transferred: number;
+  total: number;
+}
+
+export interface UpdateDownloadedInfo {
+  version: string;
 }
 
 declare global {
