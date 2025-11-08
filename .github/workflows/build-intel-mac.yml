@@ -1,0 +1,53 @@
+name: Build Intel Mac DMG
+
+on:
+  # Allow manual trigger from Actions tab
+  workflow_dispatch:
+
+  # Auto-trigger on version tags (e.g., v1.5.3)
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-intel:
+    name: Build Intel x64 DMG
+    runs-on: macos-13  # Intel x64 runner
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Intel Mac DMG
+        run: npm run package:mac:intel
+        env:
+          CI: true
+
+      - name: Get version from package.json
+        id: package-version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Upload Intel DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProfileScraper-${{ steps.package-version.outputs.version }}-x64.dmg
+          path: release/ProfileScraper-${{ steps.package-version.outputs.version }}-x64.dmg
+          retention-days: 90
+
+      # If triggered by a tag, attach to GitHub release
+      - name: Upload to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release/ProfileScraper-${{ steps.package-version.outputs.version }}-x64.dmg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
