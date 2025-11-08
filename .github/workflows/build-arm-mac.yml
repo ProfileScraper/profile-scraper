@@ -42,8 +42,13 @@ jobs:
 
           # Import certificate
           echo "$CERTIFICATE_P12" | base64 --decode > certificate.p12
-          security import certificate.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security import certificate.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productbuild
+
+          # Trust the certificate
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+
+          # Set keychain timeout to prevent locking
+          security set-keychain-settings -lut 21600 build.keychain
 
           # Clean up
           rm certificate.p12
@@ -52,6 +57,12 @@ jobs:
         run: npm run package:mac:arm
         env:
           CI: true
+
+      - name: Sign the app with certificate
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          codesign --force --deep --sign "F400347255DE114C6B130C302B0BF84068E13948" "release/mac-arm64/ProfileScraper.app"
+          codesign -dvv "release/mac-arm64/ProfileScraper.app"
 
       - name: Get version from package.json
         id: package-version
