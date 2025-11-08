@@ -61,6 +61,7 @@ jobs:
         run: npm run package:mac:arm
         env:
           CI: true
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Get version from package.json
         id: package-version
