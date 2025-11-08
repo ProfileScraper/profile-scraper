@@ -31,8 +31,7 @@ jobs:
         run: npm run package:mac:intel
         env:
           CI: true
-          GH_TOKEN: ""
-          GITHUB_TOKEN: ""
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Get version from package.json
         id: package-version
