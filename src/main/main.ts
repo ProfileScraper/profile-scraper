@@ -35,6 +35,7 @@ import { setupDataHandlers } from './ipc/dataHandlers';
 import { setupLogHandlers } from './ipc/logHandlers';
 import { setupProfileExplorerHandlers } from './ipc/profileExplorerHandlers';
 import { setupGitHubHandlers } from './ipc/githubHandlers';
+import { setupAppHandlers } from './ipc/appHandlers';
 import { initDatabase } from './database/db';
 import { migrateFromJSON } from './database/migration';
 
@@ -106,6 +107,7 @@ async function createWindow(): Promise<void> {
   }
 
   console.log('[Main] Setting up IPC handlers...');
+  setupAppHandlers();
   setupIpcHandlers(mainWindow);
   setupProfileHandlers();
   setupJobHandlers();

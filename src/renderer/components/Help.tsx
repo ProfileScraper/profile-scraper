@@ -1,6 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 export function Help() {
+  const [version, setVersion] = useState('1.5.3');
+
+  useEffect(() => {
+    loadVersion();
+  }, []);
+
+  const loadVersion = async () => {
+    try {
+      const v = await window.electronAPI.getVersion();
+      setVersion(v);
+    } catch (error) {
+      console.error('Failed to load version:', error);
+    }
+  };
 
   return (
     <div className="h-full flex flex-col bg-white">
@@ -233,7 +247,7 @@ export function Help() {
 
             <section>
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Version</h2>
-              <p className="text-gray-700">v{window.electronAPI.getVersion()}</p>
+              <p className="text-gray-700">v{version}</p>
             </section>
           </div>
         </div>

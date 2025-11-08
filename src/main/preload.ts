@@ -1,9 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { SiteProfile } from '../shared/types';
-import packageJson from '../../package.json';
 
 // Inline IPC channel constants to avoid module resolution issues in sandboxed preload
 const IPC_CHANNELS = {
+  APP_GET_VERSION: 'app:get-version',
   SCRAPE_START: 'scrape:start',
   SCRAPE_PAUSE: 'scrape:pause',
   SCRAPE_RESUME: 'scrape:resume',
@@ -57,7 +57,7 @@ console.log('[Preload] Preload script starting...');
 try {
   contextBridge.exposeInMainWorld('electronAPI', {
   // App info
-  getVersion: () => packageJson.version,
+  getVersion: () => ipcRenderer.invoke(IPC_CHANNELS.APP_GET_VERSION),
 
   // Config
   loadConfig: () => ipcRenderer.invoke(IPC_CHANNELS.CONFIG_LOAD),

@@ -11,10 +11,12 @@ export function Sidebar() {
   const [loading, setLoading] = useState(false);
   const [runningJobsCount, setRunningJobsCount] = useState(0);
   const [totalProgress, setTotalProgress] = useState<{ scraped: number; total: number } | null>(null);
+  const [version, setVersion] = useState('1.5.3');
 
   useEffect(() => {
     checkAuthStatus();
     fetchJobStatus();
+    loadVersion();
 
     // Poll for job status every 3 seconds
     const interval = setInterval(fetchJobStatus, 3000);
@@ -38,6 +40,15 @@ export function Sidebar() {
       console.error('Failed to fetch job status:', error);
       setRunningJobsCount(0);
       setTotalProgress(null);
+    }
+  };
+
+  const loadVersion = async () => {
+    try {
+      const v = await window.electronAPI.getVersion();
+      setVersion(v);
+    } catch (error) {
+      console.error('Failed to load version:', error);
     }
   };
 
@@ -188,7 +199,7 @@ export function Sidebar() {
         )}
 
         <div className="px-4 pb-2 text-xs text-gray-500 text-center">
-          v{window.electronAPI.getVersion()}
+          v{version}
         </div>
       </div>
     </aside>

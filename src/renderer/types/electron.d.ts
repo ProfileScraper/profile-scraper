@@ -83,7 +83,7 @@ export interface JobLog extends ProductLog {
 
 export interface ElectronAPI {
   // App info
-  getVersion: () => string;
+  getVersion: () => Promise<string>;
 
   // Existing methods
   startScrape: (profileName: string) => Promise<{ success: boolean }>;
