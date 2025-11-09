@@ -18,7 +18,9 @@ extraResources:
 asarUnpack:
   - node_modules/patchright/**/*
 mac:
-  target: dmg
+  target:
+    - dmg
+    - zip
   category: public.app-category.utilities
   icon: assets/icon.icns
   artifactName: ${productName}-${version}-${arch}.${ext}
