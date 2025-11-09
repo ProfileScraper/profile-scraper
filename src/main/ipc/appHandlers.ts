@@ -97,19 +97,28 @@ export function setupAppHandlers() {
       logger.info('[AppHandlers] Certificate extracted to:', tempCert);
 
       // Now use AppleScript ONLY for the privileged operation
-      // The 'with administrator privileges' clause must NOT be inside a try block
-      // Use quoted form in AppleScript to properly escape the path
-      const script = `do shell script "security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain " & quoted form of "${tempCert}" with administrator privileges`;
+      // Write AppleScript to temp file to avoid quote escaping issues
+      const scriptPath = `/tmp/trust-cert-${timestamp}-${random}.scpt`;
+      const appleScript = `
+set certPath to POSIX file "${tempCert}"
+do shell script "security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain " & quoted form of POSIX path of certPath with administrator privileges
+`;
 
       try {
-        await execAsync(`osascript -e '${script}'`);
+        // Write AppleScript to temp file
+        await execAsync(`cat > "${scriptPath}" << 'APPLESCRIPT_EOF'\n${appleScript}\nAPPLESCRIPT_EOF`);
+
+        // Execute AppleScript file
+        logger.info('[AppHandlers] Running AppleScript to trust certificate...');
+        await execAsync(`osascript "${scriptPath}"`);
+
         logger.info('[AppHandlers] Certificate trusted successfully');
       } finally {
-        // Always cleanup temp file
+        // Always cleanup temp files
         try {
-          await execAsync(`rm -f "${tempCert}"`);
+          await execAsync(`rm -f "${tempCert}" "${scriptPath}"`);
         } catch (cleanupError) {
-          logger.warn('[AppHandlers] Failed to cleanup temp file:', cleanupError);
+          logger.warn('[AppHandlers] Failed to cleanup temp files:', cleanupError);
         }
       }
 
