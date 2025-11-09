@@ -101,7 +101,7 @@ export function setupAppHandlers() {
       const scriptPath = `/tmp/trust-cert-${timestamp}-${random}.scpt`;
       const appleScript = `
 set certPath to POSIX file "${tempCert}"
-do shell script "security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain " & quoted form of POSIX path of certPath with administrator privileges
+do shell script "sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain " & quoted form of POSIX path of certPath with administrator privileges
 `;
 
       try {
