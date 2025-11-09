@@ -12,7 +12,7 @@ on:
 jobs:
   build-intel:
     name: Build Intel x64 DMG
-    runs-on: macos-13  # Intel x64 runner
+    runs-on: macos-15-intel  # Intel x64 runner
     permissions:
       contents: write
 
