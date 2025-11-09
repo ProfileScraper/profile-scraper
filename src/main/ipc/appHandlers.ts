@@ -98,10 +98,11 @@ export function setupAppHandlers() {
 
       // Now use AppleScript ONLY for the privileged operation
       // The 'with administrator privileges' clause must NOT be inside a try block
-      const script = `do shell script "security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain '${tempCert}'" with administrator privileges`;
+      // Use quoted form in AppleScript to properly escape the path
+      const script = `do shell script "security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain " & quoted form of "${tempCert}" with administrator privileges`;
 
       try {
-        await execAsync(`osascript -e '${script.replace(/'/g, "\\'")}'`);
+        await execAsync(`osascript -e '${script}'`);
         logger.info('[AppHandlers] Certificate trusted successfully');
       } finally {
         // Always cleanup temp file
