@@ -96,12 +96,12 @@ export function setupAppHandlers() {
 
       logger.info('[AppHandlers] Certificate extracted to:', tempCert);
 
-      // Now use AppleScript ONLY for the privileged operation
+      // Trust certificate in user's keychain (no admin privileges required)
       // Write AppleScript to temp file to avoid quote escaping issues
       const scriptPath = `/tmp/trust-cert-${timestamp}-${random}.scpt`;
       const appleScript = `
 set certPath to POSIX file "${tempCert}"
-do shell script "sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain " & quoted form of POSIX path of certPath with administrator privileges
+do shell script "security add-trusted-cert -d -r trustRoot -p codeSign -k ~/Library/Keychains/login.keychain-db " & quoted form of POSIX path of certPath
 `;
 
       try {
