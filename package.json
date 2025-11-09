@@ -1,6 +1,6 @@
 {
   "name": "profile-scraper",
-  "version": "1.5.9",
+  "version": "1.5.10",
   "description": "Profile-based web scraper with Electron and patchright",
   "main": "dist/main/main/main.js",
   "scripts": {
