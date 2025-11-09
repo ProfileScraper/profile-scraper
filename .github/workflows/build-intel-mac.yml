@@ -82,8 +82,8 @@ jobs:
           files: |
             release/ProfileScraper-${{ steps.package-version.outputs.version }}-x64.dmg
             release/ProfileScraper-${{ steps.package-version.outputs.version }}-x64.dmg.blockmap
-            release/ProfileScraper-${{ steps.package-version.outputs.version }}-x64-mac.zip
-            release/ProfileScraper-${{ steps.package-version.outputs.version }}-x64-mac.zip.blockmap
+            release/ProfileScraper-${{ steps.package-version.outputs.version }}-x64.zip
+            release/ProfileScraper-${{ steps.package-version.outputs.version }}-x64.zip.blockmap
             release/latest-mac.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
