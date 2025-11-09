@@ -67,8 +67,8 @@ export function setupAppHandlers() {
         set appPath to "${bundlePath}"
         set tempCert to "${tempCert}"
 
-        -- Extract certificate
-        do shell script "codesign -d --extract-certificates " & quoted form of appPath & " 2>/dev/null; mv codesign0 " & quoted form of tempCert
+        -- Extract certificate (change to /tmp first so codesign0 is created there)
+        do shell script "cd /tmp && codesign -d --extract-certificates " & quoted form of appPath & " 2>/dev/null && mv /tmp/codesign0 " & quoted form of tempCert
 
         -- Add to trusted certificates (requires admin password)
         do shell script "security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain " & quoted form of tempCert with administrator privileges
