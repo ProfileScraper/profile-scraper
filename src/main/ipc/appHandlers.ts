@@ -84,47 +84,35 @@ export function setupAppHandlers() {
 
       logger.info('[AppHandlers] Extracting certificate from:', bundlePath);
 
-      // Use AppleScript to prompt for password and run sudo commands
-      // Escape single quotes for osascript -e (outer shell layer)
-      const script = `
-        set appPath to "${bundlePath}"
-        set tempCert to "${tempCert}"
+      // Extract certificate first (without admin privileges)
+      logger.info('[AppHandlers] Running certificate extraction...');
+      await execAsync(`cd /tmp && codesign -d --extract-certificates "${bundlePath}" 2>&1`);
 
-        try
-          -- Extract certificate (change to /tmp first so codesign0 is created there)
-          do shell script "cd /tmp && codesign -d --extract-certificates " & quoted form of appPath & " 2>&1"
+      // Verify extraction succeeded
+      await execAsync('test -f /tmp/codesign0');
 
-          -- Verify codesign0 was created
-          do shell script "test -f /tmp/codesign0 || exit 1"
+      // Move to unique temp location
+      await execAsync(`mv /tmp/codesign0 "${tempCert}"`);
 
-          -- Move to unique temp location
-          do shell script "mv /tmp/codesign0 " & quoted form of tempCert
+      logger.info('[AppHandlers] Certificate extracted to:', tempCert);
 
-          -- Add to trusted certificates (requires admin password)
-          do shell script "security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain " & quoted form of tempCert with administrator privileges
+      // Now use AppleScript ONLY for the privileged operation
+      // The 'with administrator privileges' clause must NOT be inside a try block
+      const script = `do shell script "security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain '${tempCert}'" with administrator privileges`;
 
-          -- Clean up
-          do shell script "rm -f " & quoted form of tempCert
-
-          return "success"
-        on error errMsg
-          -- Clean up on error if temp file exists
-          try
-            do shell script "rm -f " & quoted form of tempCert
-          end try
-          error errMsg
-        end try
-      `;
-
-      const { stdout } = await execAsync(`osascript -e '${script.replace(/'/g, "\\'")}'`);
-
-      if (stdout.trim() === 'success') {
+      try {
+        await execAsync(`osascript -e '${script.replace(/'/g, "\\'")}'`);
         logger.info('[AppHandlers] Certificate trusted successfully');
-        return { success: true };
-      } else {
-        logger.error('[AppHandlers] Script did not complete successfully:', stdout);
-        return { success: false, error: 'Script did not complete successfully' };
+      } finally {
+        // Always cleanup temp file
+        try {
+          await execAsync(`rm -f "${tempCert}"`);
+        } catch (cleanupError) {
+          logger.warn('[AppHandlers] Failed to cleanup temp file:', cleanupError);
+        }
       }
+
+      return { success: true };
     } catch (error: any) {
       logger.error('[AppHandlers] Failed to trust certificate:', {
         error: error.message,
