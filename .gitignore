@@ -13,3 +13,11 @@ playwright-browsers/
 playwright-browsers-x64/
 playwright-browsers-arm64/
 browsers/
+
+# Code signing certificates - NEVER commit these!
+certificate.p12
+*.p12
+*.cer
+*.crt
+*.key
+*.csr
